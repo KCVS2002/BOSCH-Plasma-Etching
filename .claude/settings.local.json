@@ -34,7 +34,19 @@
       "Bash(.venv/python.exe -m notebooks.scratch.step2_02_edge_anatomy)",
       "Bash(.venv/python.exe -m notebooks.scratch.step2_03_verify_trim_rule)",
       "Bash(.venv/python.exe -m notebooks.scratch.step2_04_debug_trim)",
-      "Bash(.venv/python.exe -m notebooks.scratch.step2_05_lot_mapping)"
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_05_lot_mapping)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(.venv/Scripts/python -c \"import torch; import numpy; import pandas; import netCDF4; import xgboost; print\\('torch:', torch.__version__, '| CUDA:', torch.cuda.is_available\\(\\)\\); print\\('numpy:', numpy.__version__\\); print\\('pandas:', pandas.__version__\\); print\\('netCDF4:', netCDF4.__version__\\); print\\('xgboost:', xgboost.__version__\\)\")",
+      "Bash(.venv/Scripts/python -c \"from src.data.loader import DATASET_DIR; print\\(DATASET_DIR\\); print\\('exists:', DATASET_DIR.exists\\(\\)\\)\")",
+      "Bash(.venv/Scripts/python scripts/01_build_cache.py --version v1 --limit 2)",
+      "Bash(.venv/Scripts/python -c ' *)",
+      "Bash(.venv/Scripts/python scripts/01_build_cache.py --version v1)",
+      "Bash(.venv/Scripts/python scripts/02_make_splits.py --version v1)",
+      "Bash(.venv/Scripts/python scripts/03_train.py --config configs/exp_baseline_xgb.yaml)",
+      "Bash(rm -f cache/v1/features/baseline_xgb_v1.csv)",
+      "Bash(rm -rf \"outputs/experiments/2026-04-29_04-17_baseline-xgb\")",
+      "Bash(rm -rf \"outputs/experiments/2026-04-29_04-18_baseline-xgb\")"
     ]
   }
 }

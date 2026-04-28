@@ -30,9 +30,7 @@ import netCDF4 as nc
 import numpy as np
 import pandas as pd
 
-DATASET_DIR = Path(
-    r"c:\Users\ljse2\Desktop\4-1\종합_설계_프로젝트\BOSCH Plasma-Etching\Dataset"
-)
+DATASET_DIR = Path(__file__).resolve().parents[2] / "Dataset"
 
 
 @contextmanager
@@ -284,6 +282,116 @@ def trim_to_100_cycles(
         cycle_ends_s=seg.cycle_ends_s[fmask][:n_target],
         n_cycles=n_target,
     )
+
+
+# ----------------------------------------------------------------------
+# OES ↔ Process time alignment
+# ----------------------------------------------------------------------
+# OES `times` are UNIX timestamps; Process `times` are tool-relative seconds.
+# Their zero-points are unrelated, so we estimate an offset such that
+#   process_time = oes.t_rel + alignment_offset_s
+# by cross-correlating the SF6 ON-mask (process clock) against OES total
+# intensity. The two signals have the same 6-second cycle period, so the
+# correlation peak is sharp.
+
+def align_oes_to_process(
+    oes: OESWafer,
+    proc: ProcessWafer,
+    coarse_step_s: float = 0.5,
+    refine_step_s: float = 0.05,
+    search_range_s: tuple[float, float] = (-20.0, 120.0),
+    threshold_frac: float = 0.5,
+) -> float:
+    """Return offset such that `process_time ≈ oes.t_rel + offset`.
+
+    Uses two-stage cross-correlation (coarse grid → refined grid around best).
+    The coarse grid covers the typical ignition-delay range; the refine stage
+    pins it to ~5 cs precision, well below the 6 s cycle period.
+    """
+    sf6 = proc.column(SF6_FEATURE).astype(np.float32)
+    sf6_max = float(sf6.max())
+    if sf6_max < 1.0:
+        raise ValueError(f"SF6 signal appears constant/zero (max={sf6_max})")
+    sf6_on = (sf6 > sf6_max * threshold_frac).astype(np.float32)
+
+    total_oes = oes.data.sum(axis=1).astype(np.float32)
+    total_oes -= total_oes.mean()
+    total_oes_norm = total_oes.std()
+    if total_oes_norm < 1e-9:
+        raise ValueError("OES total intensity is flat — alignment ill-defined")
+    total_oes /= total_oes_norm
+
+    def corr(offset_s: float) -> float:
+        t_probe = oes.t_rel + offset_s
+        sf6_at_oes = np.interp(t_probe, proc.t_rel, sf6_on, left=0.0, right=0.0)
+        b = sf6_at_oes - sf6_at_oes.mean()
+        b_std = b.std()
+        if b_std < 1e-9:
+            return 0.0
+        b /= b_std
+        return float((total_oes * b).mean())
+
+    lo, hi = search_range_s
+    coarse = np.arange(lo, hi + 0.5 * coarse_step_s, coarse_step_s)
+    coarse_corrs = np.array([corr(o) for o in coarse])
+    coarse_best = float(coarse[int(np.argmax(coarse_corrs))])
+
+    refine = np.arange(
+        coarse_best - coarse_step_s,
+        coarse_best + coarse_step_s + 0.5 * refine_step_s,
+        refine_step_s,
+    )
+    refine_corrs = np.array([corr(o) for o in refine])
+    return float(refine[int(np.argmax(refine_corrs))])
+
+
+# ----------------------------------------------------------------------
+# Cycle index slicing
+# ----------------------------------------------------------------------
+
+def cycle_indices_proc(
+    seg: CycleSegmentation,
+    n_total: int,
+    cycle_period_s: float = CYCLE_PERIOD_S,
+) -> tuple[np.ndarray, np.ndarray]:
+    """For each cycle, return (start_idx, end_idx_exclusive) into Process arrays.
+
+    Cycle i spans from rising edge i to rising edge i+1. The last cycle uses
+    the median rising-to-rising sample interval to extrapolate its end.
+    """
+    starts = np.asarray(seg.sf6_rising_idx, dtype=np.int32)
+    if len(starts) < 2:
+        raise ValueError(f"need ≥2 cycle starts, got {len(starts)}")
+    median_iv = int(round(np.median(np.diff(starts))))
+    last_end = min(int(starts[-1]) + median_iv, n_total)
+    ends = np.concatenate([starts[1:], np.array([last_end], dtype=np.int32)])
+    return starts, ends.astype(np.int32)
+
+
+def cycle_indices_oes(
+    oes: OESWafer,
+    cycle_starts_proc_s: np.ndarray,
+    offset_s: float,
+    cycle_period_s: float = CYCLE_PERIOD_S,
+) -> tuple[np.ndarray, np.ndarray]:
+    """For each cycle, return (start_idx, end_idx_exclusive) into OES arrays.
+
+    Cycle i covers process-clock interval [cycle_starts_proc_s[i],
+    cycle_starts_proc_s[i+1]). The last cycle's end is extrapolated as
+    cycle_starts_proc_s[-1] + cycle_period_s.
+    """
+    cs = np.asarray(cycle_starts_proc_s, dtype=np.float64)
+    next_start = float(cs[-1]) + float(cycle_period_s)
+    boundaries_proc = np.concatenate([cs, [next_start]])  # (n+1,)
+    boundaries_oes_t = boundaries_proc - float(offset_s)  # in oes.t_rel coords
+    edges_idx = np.searchsorted(oes.t_rel, boundaries_oes_t, side="left")
+    starts = edges_idx[:-1].astype(np.int32)
+    ends = edges_idx[1:].astype(np.int32)
+    # Clamp to array bounds (last cycle end may sit past last sample)
+    n = int(oes.t_rel.shape[0])
+    ends = np.minimum(ends, n).astype(np.int32)
+    starts = np.minimum(starts, n).astype(np.int32)
+    return starts, ends
 
 
 # ----------------------------------------------------------------------
