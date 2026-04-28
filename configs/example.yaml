@@ -1,0 +1,23 @@
+# Example experiment config. Copy this to `configs/exp_<name>.yaml` and edit.
+# Every experiment run is driven by exactly one config file.
+
+experiment:
+  title: "example run"          # becomes slug in experiment folder name
+  seed: 42
+
+data:
+  cache_version: "v1"           # which cache/vN/ to read
+  split_file: "splits/kfold_5.npz"
+
+model:
+  name: "baseline_xgb"          # keyed to src/models/ registry
+  params:
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.05
+
+training:
+  epochs: 100
+  batch_size: 32
+  optimizer: "adam"
+  lr: 1.0e-3

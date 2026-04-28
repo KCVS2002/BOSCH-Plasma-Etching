@@ -1,0 +1,29 @@
+# Dataset (too large for git)
+Dataset/
+
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Preprocessed cache (regeneratable)
+cache/
+
+# Experiment outputs (can be huge — keep them local)
+outputs/experiments/
+outputs/figures/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Office temp
+~$*

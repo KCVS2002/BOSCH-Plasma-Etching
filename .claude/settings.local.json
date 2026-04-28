@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import netCDF4; print\\('netCDF4 OK'\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python)",
+      "Bash(where python:*)",
+      "Bash(python -c \"import netCDF4; print\\('OK'\\)\")",
+      "Bash(conda create:*)",
+      "Bash(conda install:*)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -m pip install netCDF4 pandas numpy scikit-learn matplotlib openpyxl)",
+      "Bash('c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe')",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" \"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/architecture_diagram.py\")",
+      "Bash(.venv/python.exe architecture_diagram.py)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -c \"import netCDF4, numpy, pandas; print\\('netCDF4:', netCDF4.__version__\\); print\\('numpy:', numpy.__version__\\); print\\('pandas:', pandas.__version__\\)\")",
+      "Bash('c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe' -c ' *)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -m pip list)",
+      "Bash(\".venv/python.exe\" explore_structure.py)",
+      "Bash(PYTHONIOENCODING=utf-8 \".venv/python.exe\" explore_structure.py)",
+      "Bash(PYTHONIOENCODING=utf-8 \".venv/python.exe\" explore_cycles.py)",
+      "Bash(PYTHONIOENCODING=utf-8 \".venv/python.exe\" explore_cycles_v2.py)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -m pip install xarray seaborn xgboost optuna tqdm)",
+      "Bash(nvidia-smi)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -m pip install torch --index-url https://download.pytorch.org/whl/cu124)",
+      "Bash(PYTHONIOENCODING=utf-8 \".venv/python.exe\" explore_cycles_v3.py)",
+      "Bash(PYTHONIOENCODING=utf-8 \".venv/python.exe\" -m src.data.loader)",
+      "Bash(\"c:/Users/ljse2/Desktop/4-1/종합_설계_프로젝트/BOSCH Plasma-Etching/.venv/python.exe\" -m pip freeze)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/python.exe -c ' *)",
+      "Bash(.venv/python.exe -m pip install python-pptx -q)",
+      "Bash(.venv/python.exe -m pip install netCDF4 xarray)",
+      "Bash(.venv/python.exe docs/architecture_diagram.py)",
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_01_verify_cycles_all_wafers)",
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_02_edge_anatomy)",
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_03_verify_trim_rule)",
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_04_debug_trim)",
+      "Bash(.venv/python.exe -m notebooks.scratch.step2_05_lot_mapping)"
+    ]
+  }
+}
