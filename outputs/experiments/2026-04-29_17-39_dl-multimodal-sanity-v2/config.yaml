@@ -1,0 +1,57 @@
+experiment:
+  title: dl multimodal sanity v2
+  seed: 42
+data:
+  cache_version: v1
+  split_file: splits/kfold5_wafer.npz
+  spatial_features:
+  - X
+  - Y
+  targets:
+  - si_etch
+  modality: multimodal
+  t_o: 128
+  t_p: 30
+model:
+  name: cycle_aware_bilstm
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 3648
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 4
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+training:
+  epochs: 15
+  batch_size: 4
+  lr: 0.0015
+  weight_decay: 0.0001
+  scheduler: cosine
+  early_stop_patience: 10
+  loss: mse
+  num_workers: 0
+  amp: false
+

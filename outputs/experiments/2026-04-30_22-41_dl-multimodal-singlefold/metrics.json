@@ -1,0 +1,72 @@
+{
+  "si_etch": {
+    "per_fold": [
+      {
+        "rmse": 3.4755069579851416,
+        "mae": 2.898980296655243,
+        "r2": 0.07131252292793111,
+        "mape_pct": 6.428941823829402,
+        "fold": 0,
+        "best_epoch": 2,
+        "n_train": 6230,
+        "n_val": 1602,
+        "fit_seconds": 347.06
+      }
+    ],
+    "aggregate": {
+      "rmse_mean": 3.4755069579851416,
+      "rmse_std": 0.0,
+      "mae_mean": 2.898980296655243,
+      "mae_std": 0.0,
+      "r2_mean": 0.07131252292793111,
+      "r2_std": 0.0,
+      "mape_pct_mean": 6.428941823829402,
+      "mape_pct_std": 0.0,
+      "fold_mean": 0.0,
+      "fold_std": 0.0,
+      "best_epoch_mean": 2.0,
+      "best_epoch_std": 0.0,
+      "n_train_mean": 6230.0,
+      "n_train_std": 0.0,
+      "n_val_mean": 1602.0,
+      "n_val_std": 0.0,
+      "fit_seconds_mean": 347.06,
+      "fit_seconds_std": 0.0
+    }
+  },
+  "oxide_etch": {
+    "per_fold": [
+      {
+        "rmse": 0.0692334444660651,
+        "mae": 0.05483981189358696,
+        "r2": 0.20095113762773642,
+        "mape_pct": 8.701507123493988,
+        "fold": 0,
+        "best_epoch": 2,
+        "n_train": 6230,
+        "n_val": 1602,
+        "fit_seconds": 226.57
+      }
+    ],
+    "aggregate": {
+      "rmse_mean": 0.0692334444660651,
+      "rmse_std": 0.0,
+      "mae_mean": 0.05483981189358696,
+      "mae_std": 0.0,
+      "r2_mean": 0.20095113762773642,
+      "r2_std": 0.0,
+      "mape_pct_mean": 8.701507123493988,
+      "mape_pct_std": 0.0,
+      "fold_mean": 0.0,
+      "fold_std": 0.0,
+      "best_epoch_mean": 2.0,
+      "best_epoch_std": 0.0,
+      "n_train_mean": 6230.0,
+      "n_train_std": 0.0,
+      "n_val_mean": 1602.0,
+      "n_val_std": 0.0,
+      "fit_seconds_mean": 226.57,
+      "fit_seconds_std": 0.0
+    }
+  }
+}

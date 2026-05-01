@@ -1,0 +1,27 @@
+Experiment dir: outputs\experiments\2026-04-29_16-20_dl-smoke
+Config: configs\exp_dl_smoke.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), 1 folds)
+Targets: ['si_etch']  |  modality: multimodal
+
+=== Target: si_etch ===
+  -- fold 0 --
+    proc kept channels: 31 (intersection across wafers)
+    setup timing: discover=0.4s load=354.6s fit_norm=54.6s apply_norm=57.0s total=466.7s
+    target si_etch stats: mean=43.6490 std=3.6103
+    ep   0 (6.4s): train_loss=0.9950 val_rmse=3.5828 val_r2=0.0131
+    ep   1 (5.3s): train_loss=0.9765 val_rmse=3.5450 val_r2=0.0338
+    ep   2 (4.7s): train_loss=0.9618 val_rmse=3.5179 val_r2=0.0485
+    ep   3 (4.8s): train_loss=0.9466 val_rmse=3.5067 val_r2=0.0546
+    ep   4 (5.2s): train_loss=0.9406 val_rmse=3.4871 val_r2=0.0651
+    ep   5 (5.2s): train_loss=0.9356 val_rmse=3.4802 val_r2=0.0688
+    ep   6 (5.4s): train_loss=0.9298 val_rmse=3.4671 val_r2=0.0758
+    ep   7 (5.4s): train_loss=0.9230 val_rmse=3.4608 val_r2=0.0791
+    ep   8 (5.5s): train_loss=0.9155 val_rmse=3.4463 val_r2=0.0869
+    ep   9 (5.4s): train_loss=0.9099 val_rmse=3.4686 val_r2=0.0750
+    final: rmse=3.4463  mae=2.7876  r2=0.0869  mape=6.14%  (525.4s)
+  AGG    rmse=3.4463±0.0000  r2=0.0869±0.0000
+
+Saved: outputs\experiments\2026-04-29_16-20_dl-smoke\metrics.json
+Saved: outputs\experiments\2026-04-29_16-20_dl-smoke\logs\fold_metrics.csv
+Saved: outputs\experiments\2026-04-29_16-20_dl-smoke\checkpoints/

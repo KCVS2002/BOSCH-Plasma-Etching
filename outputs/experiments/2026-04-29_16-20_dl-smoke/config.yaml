@@ -1,0 +1,58 @@
+# Smoke test for the DL training pipeline. Tiny model + 2 epochs.
+
+experiment:
+  title: "dl smoke"
+  seed: 42
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["si_etch"]                # one target only for speed
+  modality: "multimodal"
+  t_o: 64                              # tiny
+  t_p: 16
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 64
+      in_channels: 3648
+      out_dim: 32
+      base_channels: 8
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 8       # 3648 → 456 → 57 → 7 wavelengths
+      dropout: 0.0
+    proc_encoder:
+      in_time: 16
+      in_channels: 31
+      out_dim: 16
+      base_channels: 8
+      n_blocks: 2
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.0
+    cycle_fusion_dim: 32
+    lstm_hidden: 32
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 32
+    head_dropout: 0.0
+    use_xy: true
+
+training:
+  epochs: 10
+  batch_size: 4         # 4 wafers × 89 points = 356 predictions / step
+  lr: 5.0e-4
+  weight_decay: 0.0
+  scheduler: "none"
+  early_stop_patience: 100
+  loss: "mse"
+  num_workers: 0
+  amp: false           # AMP causes NaN at smoke-test scale; full configs can re-enable

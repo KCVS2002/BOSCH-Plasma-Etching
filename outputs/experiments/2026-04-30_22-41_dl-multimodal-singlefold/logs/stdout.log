@@ -1,0 +1,31 @@
+Experiment dir: outputs\experiments\2026-04-30_22-41_dl-multimodal-singlefold
+Config: configs\exp_dl_multimodal_singlefold.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), 1 folds)
+Targets: ['si_etch', 'oxide_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 167.3s  (discover=1.7 load=165.6)
+[setup] proc channels kept: 31
+[setup] normalisation deferred to per-fold (no val leakage)
+
+=== Target: si_etch ===
+  -- fold 0 --
+    [fold-norm] fit on 70 train wafers (fold 0)...
+    [fold-norm] done (107.3s)
+    target si_etch stats: mean=43.6490 std=3.6103
+    ep   0 (87.3s): train_loss=0.9944 train_rmse=3.6002 val_rmse=3.5673 val_r2=0.0216 val_mape=6.03%
+    ep   1 (74.2s): train_loss=0.9528 train_rmse=3.5240 val_rmse=3.5118 val_r2=0.0518 val_mape=6.02%
+    ep   2 (73.9s): train_loss=0.9370 train_rmse=3.4948 val_rmse=3.4755 val_r2=0.0713 val_mape=6.43%
+    final: rmse=3.4755  mae=2.8990  r2=0.0713  mape=6.43%  (347.1s, best_ep=2)
+  AGG    rmse=3.4755±0.0000  r2=0.0713±0.0000
+
+=== Target: oxide_etch ===
+  -- fold 0 --
+    [fold-norm] reusing fold 0 fit from previous target
+    target oxide_etch stats: mean=0.6587 std=0.0773
+    ep   0 (75.4s): train_loss=1.0227 train_rmse=0.0781 val_rmse=0.0730 val_r2=0.1124 val_mape=9.18%
+    ep   1 (75.3s): train_loss=0.8483 train_rmse=0.0712 val_rmse=0.0729 val_r2=0.1136 val_mape=8.86%
+    ep   2 (74.5s): train_loss=0.8730 train_rmse=0.0722 val_rmse=0.0692 val_r2=0.2010 val_mape=8.70%
+    final: rmse=0.0692  mae=0.0548  r2=0.2010  mape=8.70%  (226.6s, best_ep=2)
+  AGG    rmse=0.0692±0.0000  r2=0.2010±0.0000

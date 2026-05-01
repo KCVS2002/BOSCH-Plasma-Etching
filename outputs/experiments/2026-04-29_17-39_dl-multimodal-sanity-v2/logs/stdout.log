@@ -1,0 +1,30 @@
+Experiment dir: outputs\experiments\2026-04-29_17-39_dl-multimodal-sanity-v2
+Config: configs\_sanity_dl_mm_v2.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), 1 folds)
+Targets: ['si_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 276.7s  (discover=0.6 load=186.9 fit=47.1 apply=42.0)
+[setup] proc channels kept: 31
+
+=== Target: si_etch ===
+  -- fold 0 --
+    target si_etch stats: mean=43.6681 std=3.6097
+    ep   0 (77.3s): train_loss=0.9945 val_rmse=3.5689 val_r2=0.0207
+    ep   1 (73.7s): train_loss=0.9496 val_rmse=3.4852 val_r2=0.0661
+    ep   2 (74.5s): train_loss=0.9278 val_rmse=3.4523 val_r2=0.0837
+    ep   3 (76.0s): train_loss=0.9177 val_rmse=3.4217 val_r2=0.0998
+    ep   4 (75.3s): train_loss=0.8937 val_rmse=3.3664 val_r2=0.1287
+    ep   5 (74.9s): train_loss=0.8644 val_rmse=3.3078 val_r2=0.1588
+    ep   6 (75.2s): train_loss=0.8368 val_rmse=3.2392 val_r2=0.1933
+    ep   7 (75.0s): train_loss=0.7987 val_rmse=3.1581 val_r2=0.2332
+    ep   8 (75.1s): train_loss=0.7653 val_rmse=3.0838 val_r2=0.2689
+    ep   9 (75.0s): train_loss=0.7273 val_rmse=3.0218 val_r2=0.2980
+    ep  10 (74.7s): train_loss=0.6976 val_rmse=2.9653 val_r2=0.3240
+    ep  11 (73.2s): train_loss=0.6809 val_rmse=2.9307 val_r2=0.3396
+    ep  12 (73.4s): train_loss=0.6678 val_rmse=2.9118 val_r2=0.3482
+    ep  13 (73.6s): train_loss=0.6593 val_rmse=2.9008 val_r2=0.3531
+    ep  14 (73.4s): train_loss=0.6569 val_rmse=2.8988 val_r2=0.3540
+    final: rmse=2.8988  mae=2.3326  r2=0.3540  mape=5.14%  (1123.7s)
+  AGG    rmse=2.8988±0.0000  r2=0.3540±0.0000

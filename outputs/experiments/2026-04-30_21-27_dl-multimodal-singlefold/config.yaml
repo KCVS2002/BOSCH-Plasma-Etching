@@ -1,14 +1,9 @@
-# Phase-3 Process-only ablation — single-fold modality diagnostic.
-# Architecture: FiLM + Fourier xy + mean pool (matches v1 multimodal,
-# the current best). OES modality removed. Measures how much oxide
-# signal lives in process parameters alone.
-#   If Proc-only is competitive on oxide, process parameters carry the
-#   dominant signal — consider expanding the channel set (current
-#   intersection: 31 / 44 channels).
-# (attention pool was tried in oxide_v2 and made oxide WORSE — rolled back.)
+# Option C — single-fold long-run to gauge DL capacity vs XGBoost baseline.
+# 40 epochs × 1 fold × 2 targets (convergence observed ~ep 25 in pilot run).
+# If RMSE saturates close to baseline → escalate to full 5-fold.
 
 experiment:
-  title: "dl proc only singlefold"
+  title: "dl multimodal singlefold"
   seed: 42
 
 data:
@@ -16,14 +11,24 @@ data:
   split_file: "splits/kfold5_wafer.npz"
   spatial_features: ["X", "Y"]
   targets: ["si_etch", "oxide_etch"]
-  modality: "proc"
+  modality: "multimodal"
   t_o: 128
   t_p: 30
 
 model:
   name: "cycle_aware_bilstm"
   params:
-    oes_encoder: null
+    oes_encoder:
+      in_time: 128
+      in_channels: 3648
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 4
+      dropout: 0.1
     proc_encoder:
       in_time: 30
       in_channels: 31
@@ -35,17 +40,13 @@ model:
       stride_time: 2
       stride_chan: 2
       dropout: 0.1
-    cycle_fusion_dim: 64     # smaller — only one branch in
+    cycle_fusion_dim: 128
     lstm_hidden: 128
     lstm_layers: 1
     lstm_dropout: 0.0
     head_hidden: 128
     head_dropout: 0.2
     use_xy: true
-    xy_n_freqs: 6
-    xy_enc_dim: 64
-    use_film: true
-    pool: "mean"
 
 training:
   epochs: 40

@@ -1,0 +1,86 @@
+Experiment dir: outputs\experiments\2026-04-30_23-14_dl-multimodal-singlefold
+Config: configs\exp_dl_multimodal_singlefold.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), 1 folds)
+Targets: ['si_etch', 'oxide_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 166.8s  (discover=0.2 load=166.6)
+[setup] proc channels kept: 31
+[setup] normalisation deferred to per-fold (no val leakage)
+
+=== Target: si_etch ===
+  -- fold 0 --
+    [fold-norm] fit on 70 train wafers (fold 0)...
+    [fold-norm] done (105.7s)
+    target si_etch stats: mean=43.6490 std=3.6103
+    ep   0 (83.9s): train_loss=0.9944 train_rmse=3.6002 val_rmse=3.5674 val_r2=0.0215 val_mape=6.03%
+    ep   1 (74.2s): train_loss=0.9496 train_rmse=3.5181 val_rmse=3.4881 val_r2=0.0646 val_mape=6.12%
+    ep   2 (74.2s): train_loss=0.9273 train_rmse=3.4766 val_rmse=3.4506 val_r2=0.0846 val_mape=6.49%
+    ep   3 (74.2s): train_loss=0.9159 train_rmse=3.4551 val_rmse=3.4172 val_r2=0.1022 val_mape=6.26%
+    ep   4 (74.2s): train_loss=0.8882 train_rmse=3.4024 val_rmse=3.3484 val_r2=0.1380 val_mape=6.06%
+    ep   5 (74.3s): train_loss=0.8496 train_rmse=3.3278 val_rmse=3.2651 val_r2=0.1804 val_mape=5.70%
+    ep   6 (74.2s): train_loss=0.8053 train_rmse=3.2398 val_rmse=3.1418 val_r2=0.2411 val_mape=5.70%
+    ep   7 (74.3s): train_loss=0.7344 train_rmse=3.0939 val_rmse=2.9670 val_r2=0.3232 val_mape=5.53%
+    ep   8 (74.0s): train_loss=0.6547 train_rmse=2.9212 val_rmse=2.7778 val_r2=0.4068 val_mape=4.53%
+    ep   9 (74.1s): train_loss=0.5590 train_rmse=2.6994 val_rmse=2.5117 val_r2=0.5150 val_mape=4.34%
+    ep  10 (74.1s): train_loss=0.4727 train_rmse=2.4821 val_rmse=2.2743 val_r2=0.6023 val_mape=4.16%
+    ep  11 (74.2s): train_loss=0.4060 train_rmse=2.3004 val_rmse=2.1429 val_r2=0.6469 val_mape=3.77%
+    ep  12 (74.2s): train_loss=0.3606 train_rmse=2.1680 val_rmse=1.9883 val_r2=0.6960 val_mape=3.96%
+    ep  13 (74.1s): train_loss=0.3412 train_rmse=2.1089 val_rmse=1.9480 val_r2=0.7083 val_mape=3.96%
+    ep  14 (74.0s): train_loss=0.3390 train_rmse=2.1020 val_rmse=1.9420 val_r2=0.7100 val_mape=4.04%
+    ep  15 (74.2s): train_loss=0.3335 train_rmse=2.0848 val_rmse=1.9593 val_r2=0.7049 val_mape=3.88%
+    ep  16 (74.2s): train_loss=0.3217 train_rmse=2.0477 val_rmse=1.9218 val_r2=0.7160 val_mape=3.94%
+    ep  17 (77.5s): train_loss=0.3249 train_rmse=2.0579 val_rmse=1.9149 val_r2=0.7181 val_mape=3.97%
+    ep  18 (77.0s): train_loss=0.3277 train_rmse=2.0668 val_rmse=1.9325 val_r2=0.7129 val_mape=3.90%
+    ep  19 (77.3s): train_loss=0.3209 train_rmse=2.0451 val_rmse=1.9202 val_r2=0.7165 val_mape=3.96%
+    ep  20 (77.2s): train_loss=0.3190 train_rmse=2.0390 val_rmse=1.9397 val_r2=0.7107 val_mape=3.88%
+    ep  21 (76.8s): train_loss=0.3195 train_rmse=2.0407 val_rmse=1.9241 val_r2=0.7154 val_mape=3.91%
+    ep  22 (77.9s): train_loss=0.3190 train_rmse=2.0391 val_rmse=1.9159 val_r2=0.7178 val_mape=3.95%
+    ep  23 (90.0s): train_loss=0.3161 train_rmse=2.0297 val_rmse=1.9233 val_r2=0.7156 val_mape=4.00%
+    ep  24 (77.3s): train_loss=0.3123 train_rmse=2.0175 val_rmse=1.9243 val_r2=0.7153 val_mape=3.90%
+    ep  25 (77.2s): train_loss=0.3220 train_rmse=2.0485 val_rmse=1.9127 val_r2=0.7187 val_mape=3.94%
+    ep  26 (77.3s): train_loss=0.3163 train_rmse=2.0304 val_rmse=1.9111 val_r2=0.7192 val_mape=3.95%
+    ep  27 (77.1s): train_loss=0.3153 train_rmse=2.0272 val_rmse=1.9137 val_r2=0.7184 val_mape=3.92%
+    ep  28 (76.9s): train_loss=0.3154 train_rmse=2.0274 val_rmse=1.9098 val_r2=0.7196 val_mape=3.94%
+    ep  29 (77.2s): train_loss=0.3129 train_rmse=2.0194 val_rmse=1.9103 val_r2=0.7194 val_mape=3.95%
+    ep  30 (77.3s): train_loss=0.3170 train_rmse=2.0327 val_rmse=1.9145 val_r2=0.7182 val_mape=3.95%
+    ep  31 (77.0s): train_loss=0.3133 train_rmse=2.0208 val_rmse=1.9196 val_r2=0.7167 val_mape=3.91%
+    ep  32 (77.2s): train_loss=0.3162 train_rmse=2.0302 val_rmse=1.9145 val_r2=0.7182 val_mape=3.92%
+    ep  33 (77.3s): train_loss=0.3107 train_rmse=2.0125 val_rmse=1.9162 val_r2=0.7177 val_mape=3.92%
+    ep  34 (77.1s): train_loss=0.3094 train_rmse=2.0080 val_rmse=1.9122 val_r2=0.7189 val_mape=3.93%
+    ep  35 (77.2s): train_loss=0.3178 train_rmse=2.0353 val_rmse=1.9179 val_r2=0.7172 val_mape=3.91%
+    ep  36 (77.0s): train_loss=0.3088 train_rmse=2.0063 val_rmse=1.9139 val_r2=0.7184 val_mape=3.92%
+    early stop @ epoch 36 (best 28, val_rmse=1.9098)
+    final: rmse=1.9098  mae=1.7449  r2=0.7196  mape=3.94%  (2937.4s, best_ep=28)
+  AGG    rmse=1.9098±0.0000  r2=0.7196±0.0000
+
+=== Target: oxide_etch ===
+  -- fold 0 --
+    [fold-norm] reusing fold 0 fit from previous target
+    target oxide_etch stats: mean=0.6587 std=0.0773
+    ep   0 (77.4s): train_loss=0.9910 train_rmse=0.0769 val_rmse=0.0714 val_r2=0.1500 val_mape=8.98%
+    ep   1 (77.3s): train_loss=0.8221 train_rmse=0.0701 val_rmse=0.0674 val_r2=0.2437 val_mape=8.56%
+    ep   2 (77.1s): train_loss=0.7863 train_rmse=0.0685 val_rmse=0.0668 val_r2=0.2561 val_mape=8.46%
+    ep   3 (77.2s): train_loss=0.8200 train_rmse=0.0700 val_rmse=0.0693 val_r2=0.2002 val_mape=8.47%
+    ep   4 (77.4s): train_loss=0.7321 train_rmse=0.0661 val_rmse=0.0672 val_r2=0.2462 val_mape=8.36%
+    ep   5 (77.2s): train_loss=0.7547 train_rmse=0.0671 val_rmse=0.0671 val_r2=0.2488 val_mape=8.43%
+    ep   6 (77.3s): train_loss=0.7608 train_rmse=0.0674 val_rmse=0.0677 val_r2=0.2365 val_mape=8.39%
+    ep   7 (77.3s): train_loss=0.7854 train_rmse=0.0685 val_rmse=0.0693 val_r2=0.1989 val_mape=8.70%
+    ep   8 (77.3s): train_loss=0.7454 train_rmse=0.0667 val_rmse=0.0678 val_r2=0.2340 val_mape=8.48%
+    ep   9 (84.7s): train_loss=0.7215 train_rmse=0.0656 val_rmse=0.0662 val_r2=0.2693 val_mape=8.29%
+    ep  10 (77.2s): train_loss=0.7147 train_rmse=0.0653 val_rmse=0.0678 val_r2=0.2340 val_mape=8.47%
+    ep  11 (77.1s): train_loss=0.7386 train_rmse=0.0664 val_rmse=0.0664 val_r2=0.2660 val_mape=8.26%
+    ep  12 (77.0s): train_loss=0.7693 train_rmse=0.0678 val_rmse=0.0662 val_r2=0.2688 val_mape=8.28%
+    ep  13 (77.1s): train_loss=0.7229 train_rmse=0.0657 val_rmse=0.0657 val_r2=0.2803 val_mape=8.21%
+    ep  14 (77.3s): train_loss=0.7167 train_rmse=0.0654 val_rmse=0.0659 val_r2=0.2760 val_mape=8.28%
+    ep  15 (77.4s): train_loss=0.7167 train_rmse=0.0654 val_rmse=0.0664 val_r2=0.2648 val_mape=8.27%
+    ep  16 (77.2s): train_loss=0.7223 train_rmse=0.0657 val_rmse=0.0667 val_r2=0.2590 val_mape=8.35%
+    ep  17 (77.2s): train_loss=0.7147 train_rmse=0.0653 val_rmse=0.0675 val_r2=0.2416 val_mape=8.48%
+    ep  18 (77.2s): train_loss=0.7275 train_rmse=0.0659 val_rmse=0.0677 val_r2=0.2365 val_mape=8.39%
+    ep  19 (77.4s): train_loss=0.7208 train_rmse=0.0656 val_rmse=0.0666 val_r2=0.2595 val_mape=8.36%
+    ep  20 (77.2s): train_loss=0.7180 train_rmse=0.0655 val_rmse=0.0666 val_r2=0.2601 val_mape=8.28%
+    ep  21 (77.0s): train_loss=0.7109 train_rmse=0.0651 val_rmse=0.0664 val_r2=0.2644 val_mape=8.29%
+    early stop @ epoch 21 (best 13, val_rmse=0.0657)
+    final: rmse=0.0657  mae=0.0527  r2=0.2803  mape=8.21%  (1707.7s, best_ep=13)
+  AGG    rmse=0.0657±0.0000  r2=0.2803±0.0000

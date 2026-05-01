@@ -1,0 +1,24 @@
+# dl oxide v2 attn singlefold
+
+- Started: 2026-05-01T03:16:59
+- Slug: `dl-oxide-v2-attn-singlefold`
+
+## 목적
+
+(무엇을 검증/개선하려는 실험인지)
+
+## 설정 요약
+
+(핵심 하이퍼파라미터, 데이터 버전)
+
+## 결과
+
+(metrics.json 참조, 주요 관찰)
+
+## 배운 점 / 다음 할 것
+
+
+## 자동 기록된 결과 (DL training script)
+
+- **si_etch**: RMSE=0.2389±0.0000, MAE=0.1882±0.0000, R²=0.9956±0.0000, MAPE=0.43±0.00%
+- **oxide_etch**: RMSE=0.0463±0.0000, MAE=0.0267±0.0000, R²=0.6428±0.0000, MAPE=4.18±0.00%

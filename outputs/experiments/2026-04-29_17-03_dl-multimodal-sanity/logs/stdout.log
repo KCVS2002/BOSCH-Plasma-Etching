@@ -1,0 +1,18 @@
+Experiment dir: outputs\experiments\2026-04-29_17-03_dl-multimodal-sanity
+Config: configs\_sanity_dl_mm.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), 1 folds)
+Targets: ['si_etch']  |  modality: multimodal
+
+=== Target: si_etch ===
+  -- fold 0 --
+    proc kept channels: 31 (intersection across wafers)
+    setup timing: discover=0.3s load=395.4s fit_norm=109.1s apply_norm=117.7s total=622.4s
+    target si_etch stats: mean=43.6490 std=3.6103
+    ep   0 (85.7s): train_loss=0.9976 val_rmse=3.5710 val_r2=0.0196
+    ep   1 (76.3s): train_loss=0.9755 val_rmse=3.5385 val_r2=0.0373
+    ep   2 (75.4s): train_loss=0.9592 val_rmse=3.5098 val_r2=0.0529
+    ep   3 (75.3s): train_loss=0.9518 val_rmse=3.4979 val_r2=0.0593
+    ep   4 (385.3s): train_loss=0.9490 val_rmse=3.4987 val_r2=0.0589
+    final: rmse=3.4979  mae=2.9033  r2=0.0593  mape=6.43%  (1327.9s)
+  AGG    rmse=3.4979±0.0000  r2=0.0593±0.0000

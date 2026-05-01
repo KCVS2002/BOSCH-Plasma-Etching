@@ -1,8 +1,10 @@
 # Phase-3 OES-only ablation — single-fold modality diagnostic.
-# Same architecture (FiLM + Fourier + attention pool) as oxide_v2, but
-# Process modality removed. Measures how much oxide signal lives in OES
-# alone. If OES-only ≈ multimodal → process channels are uninformative.
-# If OES-only ≪ multimodal → process is the dominant oxide signal.
+# Architecture: FiLM + Fourier xy + mean pool (matches v1 multimodal,
+# the current best). Process modality removed. Measures how much oxide
+# signal lives in OES alone.
+#   If OES-only ≈ multimodal v1 → process channels are uninformative.
+#   If OES-only ≪ multimodal v1 → process is the dominant oxide signal.
+# (attention pool was tried in oxide_v2 and made oxide WORSE — rolled back.)
 
 experiment:
   title: "dl oes only singlefold"
@@ -37,13 +39,12 @@ model:
     lstm_layers: 1
     lstm_dropout: 0.0
     head_hidden: 128
-    head_dropout: 0.3
+    head_dropout: 0.2
     use_xy: true
     xy_n_freqs: 6
     xy_enc_dim: 64
     use_film: true
-    pool: "attention"
-    attn_hidden: 64
+    pool: "mean"
 
 training:
   epochs: 40

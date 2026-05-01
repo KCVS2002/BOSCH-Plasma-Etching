@@ -1,0 +1,37 @@
+{
+  "si_etch": {
+    "per_fold": [
+      {
+        "rmse": 2.898751151402447,
+        "mae": 2.332642920752441,
+        "r2": 0.35396635996542236,
+        "mape_pct": 5.14141293022669,
+        "fold": 0,
+        "best_epoch": 14,
+        "n_train": 6230,
+        "n_val": 1602,
+        "fit_seconds": 1123.69
+      }
+    ],
+    "aggregate": {
+      "rmse_mean": 2.898751151402447,
+      "rmse_std": 0.0,
+      "mae_mean": 2.332642920752441,
+      "mae_std": 0.0,
+      "r2_mean": 0.35396635996542236,
+      "r2_std": 0.0,
+      "mape_pct_mean": 5.14141293022669,
+      "mape_pct_std": 0.0,
+      "fold_mean": 0.0,
+      "fold_std": 0.0,
+      "best_epoch_mean": 14.0,
+      "best_epoch_std": 0.0,
+      "n_train_mean": 6230.0,
+      "n_train_std": 0.0,
+      "n_val_mean": 1602.0,
+      "n_val_std": 0.0,
+      "fit_seconds_mean": 1123.69,
+      "fit_seconds_std": 0.0
+    }
+  }
+}
