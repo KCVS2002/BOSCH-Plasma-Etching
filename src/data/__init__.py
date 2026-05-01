@@ -1,3 +1,16 @@
+from .dataset import (
+    Normalizer,
+    SampleDataset,
+    ScalarStats,
+    WaferCycleStore,
+    WaferDataset,
+    WaferRecord,
+    build_oes_cycle_tensor,
+    build_proc_cycle_tensor,
+    build_sample_arrays,
+    fit_oes_normalizer,
+    fit_proc_normalizer,
+)
 from .loader import (
     DATASET_DIR,
     align_oes_to_process,
@@ -14,9 +27,20 @@ from .loader import (
 
 __all__ = [
     "DATASET_DIR",
+    "Normalizer",
+    "SampleDataset",
+    "ScalarStats",
+    "WaferCycleStore",
+    "WaferDataset",
+    "WaferRecord",
     "align_oes_to_process",
+    "build_oes_cycle_tensor",
+    "build_proc_cycle_tensor",
+    "build_sample_arrays",
     "cycle_indices_oes",
     "cycle_indices_proc",
+    "fit_oes_normalizer",
+    "fit_proc_normalizer",
     "list_wafers",
     "load_measurements_89",
     "load_oes_wafer",

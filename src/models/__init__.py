@@ -13,8 +13,14 @@ def _xgboost_regressor(params: dict[str, Any]):
     return XGBRegressor(**params)
 
 
+def _cycle_aware_bilstm(params: dict[str, Any]):
+    from .bilstm_vm import build_cycle_aware_bilstm
+    return build_cycle_aware_bilstm(params)
+
+
 _FACTORIES: dict[str, Callable[[dict[str, Any]], Any]] = {
     "xgboost_regressor": _xgboost_regressor,
+    "cycle_aware_bilstm": _cycle_aware_bilstm,
 }
 
 

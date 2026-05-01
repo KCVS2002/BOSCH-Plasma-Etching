@@ -46,7 +46,12 @@
       "Bash(.venv/Scripts/python scripts/03_train.py --config configs/exp_baseline_xgb.yaml)",
       "Bash(rm -f cache/v1/features/baseline_xgb_v1.csv)",
       "Bash(rm -rf \"outputs/experiments/2026-04-29_04-17_baseline-xgb\")",
-      "Bash(rm -rf \"outputs/experiments/2026-04-29_04-18_baseline-xgb\")"
+      "Bash(rm -rf \"outputs/experiments/2026-04-29_04-18_baseline-xgb\")",
+      "Bash(.venv/python.exe scripts/01_build_cache.py --version v1)",
+      "Bash(tee outputs/figures/_cache_build_log.txt)",
+      "Bash(.venv/python.exe scripts/02_make_splits.py --version v1)",
+      "Bash(.venv/python.exe scripts/04_train_dl.py --config configs/exp_dl_smoke.yaml --limit-folds 1)",
+      "Bash(tee outputs/figures/_dl_smoke_run.log)"
     ]
   }
 }
