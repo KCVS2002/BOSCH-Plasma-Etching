@@ -36,8 +36,10 @@ BOSCH Plasma-Etching/
 ├── scripts/                   # 실행 엔트리. `python -m scripts.NN_name` 으로 실행.
 │   ├── 01_build_cache.py      #   전처리: raw → cache/vN/
 │   ├── 02_make_splits.py      #   GroupKFold 분할 저장
-│   ├── 03_train.py            #   학습
-│   └── 04_evaluate.py         #   평가
+│   ├── 03_train.py            #   XGBoost baseline 학습
+│   ├── 04_train_dl.py         #   Cycle-Aware DL 학습 (2D-CNN + Bi-LSTM)
+│   ├── 05_interpret.py        #   해석 분석: XGBoost SHAP + DL gradient attribution
+│   └── 06_draw_architecture.py#   아키텍처 다이어그램 생성
 │
 ├── notebooks/
 │   ├── eda/                   # 정식 EDA 스크립트 (재사용, 보존)
@@ -117,14 +119,23 @@ EDA 그림은 숫자 prefix로 구분: `01_oes_cycle_overview.png`, `08_gasflow_
 
 ### 4.1. 실행 방식
 
-프로젝트 루트에서 모듈로 실행한다:
+프로젝트 루트에서 모듈로 실행한다. **가상환경은 `.venv\python.exe`** 를 사용한다:
 
 ```bash
-python -m scripts.01_build_cache --config configs/cache_v1.yaml
-python -m scripts.03_train --config configs/exp_baseline.yaml
+# XGBoost baseline
+.venv\python.exe -m scripts.03_train --config configs/exp_baseline_xgb.yaml
+
+# DL 학습 (Cycle-Aware BiLSTM)
+.venv\python.exe -m scripts.04_train_dl --config configs/exp_dl_multimodal_singlefold.yaml
+
+# 해석 분석 (SHAP + gradient attribution)
+.venv\python.exe -m scripts.05_interpret --dl-exp <exp_dir> --xgb-exp <exp_dir> --target oxide_etch
+
+# 아키텍처 다이어그램
+.venv\python.exe -m scripts.06_draw_architecture
 ```
 
-(`python scripts/01_build_cache.py` 직접 실행도 되게 `sys.path` 조작은 하지 않는다 — `-m` 로 충분.)
+(`python scripts/...` 직접 실행도 되게 `sys.path` 조작은 하지 않는다 — `-m` 로 충분.)
 
 ### 4.2. Config 기반 재현성
 
@@ -185,17 +196,26 @@ python -m scripts.03_train --config configs/exp_baseline.yaml
 
 ## 7. 워크플로 요약 (새 실험 실행 절차)
 
+**XGBoost 실험:**
 1. `configs/exp_xxx.yaml` 작성
-2. (필요시) `scripts/01_build_cache.py` 로 캐시 생성
-3. `python -m scripts.03_train --config configs/exp_xxx.yaml` 실행
-4. 스크립트 내부에서 `make_experiment_dir("exp xxx")` 호출 → 실험 폴더 자동 생성
-5. config 복사 + 학습 진행 + metrics.json + checkpoint 저장
-6. 실험 종료 후 `NOTES.md` 업데이트 (관찰·다음 할 것)
+2. `.venv\python.exe -m scripts.03_train --config configs/exp_xxx.yaml` 실행
+3. 스크립트 내부에서 `make_experiment_dir("exp xxx")` 호출 → 실험 폴더 자동 생성
+4. config 복사 + 학습 + metrics.json + checkpoint(.json) 저장
+5. 실험 종료 후 `NOTES.md` 업데이트
+
+**DL 실험:**
+1. `configs/exp_dl_xxx.yaml` 작성
+2. `.venv\python.exe -m scripts.04_train_dl --config configs/exp_dl_xxx.yaml` 실행
+3. checkpoint(.pt) 에 모델 가중치 + normalizer stats 저장됨 (05_interpret 에서 재사용)
+4. 실험 종료 후 `NOTES.md` 업데이트
+
+**해석 분석:**
+- `.venv\python.exe -m scripts.05_interpret --dl-exp <dir> --xgb-exp <dir> --target oxide_etch`
+- XGBoost SHAP + DL gradient attribution 결과를 각 실험의 `figures/` 에 저장
 
 ---
 
 ## 8. 참고 문서
 
 - 연구 계획: [docs/연구계획서_초안.md](docs/연구계획서_초안.md)
-- 아키텍처 다이어그램: [docs/architecture_diagram.png](docs/architecture_diagram.png)
-- 파이프라인 다이어그램: [docs/pipeline_diagram.png](docs/pipeline_diagram.png)
+- 생성된 아키텍처 다이어그램: [outputs/figures/arch_xgboost.png](outputs/figures/arch_xgboost.png), [outputs/figures/arch_dl_multimodal.png](outputs/figures/arch_dl_multimodal.png)
