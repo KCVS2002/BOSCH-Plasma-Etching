@@ -70,6 +70,12 @@ class CycleVMConfig:
     # --- cycle aggregation ---
     pool: str = "mean"         # "mean" (uniform) or "attention" (learned weights)
     attn_hidden: int = 64      # hidden dim of attention scoring MLP
+    # --- wafer-level XGB feature injection (before FiLM) ---
+    # Set xgb_feat_dim=0 (default) to disable — identical to the original model.
+    # When >0, the K XGB features are projected to xgb_proj_dim and concat'd to
+    # wafer_repr BEFORE FiLM, enriching the shared wafer context each point sees.
+    xgb_feat_dim: int = 0      # 0 = disabled (backward compat). Set to len(xgb_feat_names).
+    xgb_proj_dim: int = 32     # projection dim for XGB features
 
 
 class FourierFeatureEncoder(nn.Module):
@@ -149,6 +155,7 @@ class FiLMHead(nn.Module):
         xy_enc_dim: int,
         head_hidden: int,
         head_dropout: float,
+        xgb_proj_dim: int = 0,
     ):
         super().__init__()
         self.wafer_dim = wafer_dim
@@ -156,23 +163,35 @@ class FiLMHead(nn.Module):
         # Initialise modulator output to ~0 so γ≈1, β≈0 at start
         nn.init.zeros_(self.modulator.weight)
         nn.init.zeros_(self.modulator.bias)
+        # xgb_proj_dim > 0: XGB features are concat'd AFTER FiLM modulation.
+        # FiLM only modulates the LSTM wafer_repr — XGB features bypass it entirely.
         self.regress = nn.Sequential(
-            nn.Linear(wafer_dim + xy_enc_dim, head_hidden),
+            nn.Linear(wafer_dim + xy_enc_dim + xgb_proj_dim, head_hidden),
             nn.GELU(),
             nn.Dropout(head_dropout),
             nn.Linear(head_hidden, 1),
         )
 
-    def forward(self, wafer: torch.Tensor, xy_enc: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        wafer: torch.Tensor,
+        xy_enc: torch.Tensor,
+        xgb_enc: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         # wafer:   (B, wafer_dim)
         # xy_enc:  (B, n_pts, xy_enc_dim)
+        # xgb_enc: (B, xgb_proj_dim) or None — wafer-level, broadcast to all points
         n_pts = xy_enc.shape[1]
         gb = self.modulator(xy_enc)                              # (B, n_pts, 2*wd)
         d_gamma, beta = gb.chunk(2, dim=-1)                      # each (B, n_pts, wd)
         gamma = 1.0 + d_gamma
         wafer_b = wafer.unsqueeze(1).expand(-1, n_pts, -1)       # (B, n_pts, wd)
         modulated = gamma * wafer_b + beta
-        full = torch.cat([modulated, xy_enc], dim=-1)            # (B, n_pts, wd+xy_enc_dim)
+        parts = [modulated, xy_enc]                              # FiLM result first
+        if xgb_enc is not None:
+            # (B, proj_dim) → (B, n_pts, proj_dim): same XGB context for every point
+            parts.append(xgb_enc.unsqueeze(1).expand(-1, n_pts, -1))
+        full = torch.cat(parts, dim=-1)
         return self.regress(full).squeeze(-1)                    # (B, n_pts)
 
 
@@ -220,6 +239,29 @@ class CycleAwareBiLSTM(nn.Module):
         else:
             raise ValueError(f"unknown pool={cfg.pool!r} (expected 'mean' or 'attention')")
 
+        # XGB feature projection (K → xgb_proj_dim).
+        # Injected AFTER FiLM into the regression head, NOT into wafer_repr.
+        # This keeps FiLM's wafer_dim and zero-init unchanged from the baseline.
+        #
+        # Zero-init the Linear so xgb_enc ≈ 0 at epoch 0 → head sees the same
+        # input distribution as the baseline (xgb portion is just zeros). The
+        # gradient still flows back to xgb_proj weights via the head's xgb-portion
+        # weights (which are random/non-zero), so xgb_proj learns to extract
+        # signal gradually rather than disrupting training from epoch 0.
+        # Mirrors FiLM's zero-init philosophy: start as identity, learn modulation.
+        if cfg.xgb_feat_dim > 0:
+            xgb_linear = nn.Linear(cfg.xgb_feat_dim, cfg.xgb_proj_dim)
+            nn.init.zeros_(xgb_linear.weight)
+            nn.init.zeros_(xgb_linear.bias)
+            self.xgb_proj = nn.Sequential(
+                xgb_linear,
+                nn.GELU(),
+            )
+        else:
+            self.xgb_proj = None
+
+        xgb_head_dim = cfg.xgb_proj_dim if cfg.xgb_feat_dim > 0 else 0
+
         if cfg.use_xy:
             if cfg.xy_n_freqs > 0:
                 self.xy_encoder = FourierFeatureEncoder(
@@ -240,10 +282,11 @@ class CycleAwareBiLSTM(nn.Module):
                 xy_enc_dim=xy_dim,
                 head_hidden=cfg.head_hidden,
                 head_dropout=cfg.head_dropout,
+                xgb_proj_dim=xgb_head_dim,
             )
             self.head = None
         else:
-            head_in = wafer_dim + xy_dim
+            head_in = wafer_dim + xy_dim + xgb_head_dim
             self.head = nn.Sequential(
                 nn.Linear(head_in, cfg.head_hidden),
                 nn.GELU(),
@@ -275,13 +318,15 @@ class CycleAwareBiLSTM(nn.Module):
         oes: torch.Tensor | None = None,
         proc: torch.Tensor | None = None,
         xy: torch.Tensor | None = None,
+        xgb_feat: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Wafer-level forward.
 
         Shapes:
-            oes:  (B, n_cycles, T_o, W)
-            proc: (B, n_cycles, T_p, F)
-            xy:   (B, n_points, 2)
+            oes:      (B, n_cycles, T_o, W)
+            proc:     (B, n_cycles, T_p, F)
+            xy:       (B, n_points, 2)
+            xgb_feat: (B, K) wafer-level XGB features — required if xgb_feat_dim > 0
         Returns:
             (B, n_points)
         """
@@ -291,6 +336,14 @@ class CycleAwareBiLSTM(nn.Module):
             wafer = self.cycle_pool(seq)                      # (B, 2h) attention
         else:
             wafer = seq.mean(dim=1)                           # (B, 2h) mean
+
+        # Project XGB features for head injection (does NOT modify wafer_repr)
+        if self.xgb_proj is not None:
+            if xgb_feat is None:
+                raise ValueError("model expects xgb_feat input (xgb_feat_dim > 0)")
+            xgb_enc = self.xgb_proj(xgb_feat)   # (B, xgb_proj_dim)
+        else:
+            xgb_enc = None
 
         if not self.cfg.use_xy:
             # No xy at all — return one prediction per wafer
@@ -306,12 +359,15 @@ class CycleAwareBiLSTM(nn.Module):
 
         if self.use_film:
             assert self.film_head is not None
-            return self.film_head(wafer, xy_enc)              # (B, n_pts)
+            return self.film_head(wafer, xy_enc, xgb_enc=xgb_enc)   # (B, n_pts)
 
-        # Legacy concat path
+        # Legacy concat path (non-FiLM)
         n_pts = xy_enc.shape[1]
         wafer_b = wafer.unsqueeze(1).expand(-1, n_pts, -1)
-        full = torch.cat([wafer_b, xy_enc], dim=-1)
+        parts = [wafer_b, xy_enc]
+        if xgb_enc is not None:
+            parts.append(xgb_enc.unsqueeze(1).expand(-1, n_pts, -1))
+        full = torch.cat(parts, dim=-1)
         assert self.head is not None
         return self.head(full).squeeze(-1)
 
@@ -333,5 +389,7 @@ def build_cycle_aware_bilstm(params: dict[str, Any]) -> CycleAwareBiLSTM:
         use_film=bool(params.get("use_film", True)),
         pool=str(params.get("pool", "mean")),
         attn_hidden=int(params.get("attn_hidden", 64)),
+        xgb_feat_dim=int(params.get("xgb_feat_dim", 0)),
+        xgb_proj_dim=int(params.get("xgb_proj_dim", 32)),
     )
     return CycleAwareBiLSTM(cfg)

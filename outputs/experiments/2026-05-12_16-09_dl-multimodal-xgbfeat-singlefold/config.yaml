@@ -1,0 +1,105 @@
+# XGB Feature Injection variant of the multimodal best model.
+# Base: exp_dl_multimodal_singlefold.yaml (FiLM + Fourier xy + mean pool).
+# New:  15 wafer-level XGB process-temporal features are projected (32d) and
+#       concat'd to wafer_repr BEFORE FiLM modulation.
+#
+# Hypothesis: the BiLSTM struggles to efficiently extract global temporal
+# summaries (e.g. late-cycle heater temp drift) from 88 training wafers.
+# XGBoost SHAP showed these features (proc_Heater2Temp_late = #1 for oxide)
+# are highly predictive — feeding them explicitly should recover that signal.
+#
+# Feature selection criteria (중요도 + 적절성):
+#   1. Process-only (no OES — DL already sees raw 3648-ch OES)
+#   2. No X, Y  (already in FiLM+Fourier)
+#   3. Temporal stats only: _late / _slope (global trend, hardest for BiLSTM)
+#   4. Physics-first channel order: thermal > RF > DC bias > pressure > gas
+#   5. One stat per channel (dedup by priority)
+#
+# To regenerate this list:
+#   python src/features/xgb_inject.py --cache cache/v1 --top-k 15
+
+experiment:
+  title: "dl multimodal xgbfeat singlefold"
+  seed: 42
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch", "si_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  xgb_feat_names:
+    # Thermal drift — SHAP #1 group for oxide_etch
+    - proc_Heater1Temp_late
+    - proc_Heater2Temp_late    # SHAP 1위
+    - proc_Heater3Temp_late
+    - proc_Heater4Temp_late
+    # RF power stability (platen + source)
+    - proc_PlatenRFLoadPower_late
+    - proc_PlatenRFPeakToPeak_late
+    - proc_PlatenRFReflectedPower_late
+    - proc_SourceRFLoadPower_late
+    - proc_SourceRF2LoadPower_late
+    # Ion energy (DC bias)
+    - proc_PlatenDcBias_late
+    # Chamber pressure
+    - proc_Pressure_late
+    - proc_ForeLinePressure_late
+    # Gas flow stability (SF6 = Gas1, C4F8 = Gas2)
+    - proc_Gas1Flow_late
+    - proc_Gas2Flow_late
+    # Endpoint detection evolution
+    - proc_EpdIntensity_late
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 3648
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 4
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    # XGB feature injection
+    xgb_feat_dim: 15    # must equal len(data.xgb_feat_names)
+    xgb_proj_dim: 32    # projected dim: wafer_repr becomes 256+32=288 before FiLM
+
+training:
+  epochs: 40
+  batch_size: 4
+  lr: 1.5e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 8
+  loss: "mse"
+  num_workers: 0
+  amp: false

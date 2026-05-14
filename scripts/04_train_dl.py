@@ -76,6 +76,7 @@ def _forward(model: nn.Module, batch: dict) -> torch.Tensor:
         oes=batch.get("oes"),
         proc=batch.get("proc"),
         xy=batch.get("xy"),
+        xgb_feat=batch.get("xgb_feat"),
     )
 
 
@@ -337,7 +338,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--limit-folds", type=int, default=None,
-                        help="train only the first N folds (smoke test)")
+                        help="override config limit_folds (e.g. --limit-folds 5 for full CV)")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
@@ -361,9 +362,13 @@ def main() -> None:
     cache_root = PROJECT_ROOT / "cache" / cfg["data"]["cache_version"]
     meas = _load_measurements(cache_root)
     split = load_split(cache_root / cfg["data"]["split_file"])
-    n_folds = split.n_folds if args.limit_folds is None else min(args.limit_folds, split.n_folds)
+    # Priority: CLI --limit-folds > config experiment.limit_folds > default 1 (single fold)
+    cfg_limit = cfg["experiment"].get("limit_folds", 1)
+    cli_limit = args.limit_folds
+    effective_limit = cli_limit if cli_limit is not None else cfg_limit
+    n_folds = min(effective_limit, split.n_folds) if effective_limit is not None else split.n_folds
     log(f"Cache: {cache_root.relative_to(PROJECT_ROOT)}  |  split: {cfg['data']['split_file']} "
-        f"({split.method}, {n_folds} folds)")
+        f"({split.method}, running {n_folds}/{split.n_folds} folds)")
 
     targets = list(cfg["data"]["targets"])
     log(f"Targets: {targets}  |  modality: {cfg['data']['modality']}")
@@ -375,11 +380,13 @@ def main() -> None:
     t_setup = time.time()
     all_keys = sorted(set(meas["experiment_key"].astype(str).tolist()))
     log(f"\n[setup] loading {len(all_keys)} wafers (one-time, shared across folds)...")
+    xgb_feat_names = cfg["data"].get("xgb_feat_names") or None
     store = WaferCycleStore(
         cache_root=cache_root,
         meas=meas,
         t_o=int(cfg["data"]["t_o"]),
         t_p=int(cfg["data"]["t_p"]),
+        xgb_feat_names=xgb_feat_names,
     )
     t_a = time.time()
     store.discover_common_proc_channels(all_keys)
@@ -390,6 +397,8 @@ def main() -> None:
     log(f"[setup] done in {time.time()-t_setup:.1f}s  "
         f"(discover={t_disc:.1f} load={t_load:.1f})")
     log(f"[setup] proc channels kept: {store.n_proc_channels}")
+    log(f"[setup] XGB injection features: {store.n_xgb_feats} "
+        f"({'disabled' if store.n_xgb_feats == 0 else ', '.join(store.xgb_feat_names[:3]) + '...'})")
     log(f"[setup] normalisation deferred to per-fold (no val leakage)")
 
     metrics_out: dict[str, dict] = {}
@@ -439,6 +448,8 @@ def main() -> None:
                 "x_stats": fold_stats["x_stats"],
                 "y_stats": fold_stats["y_stats"],
                 "proc_kept_names": fold_stats["proc_kept_names"],
+                "xgb_feat_names": list(store.xgb_feat_names) if store.xgb_feat_names else [],
+                "xgb_normalizer": store.xgb_normalizer.state_dict() if store.xgb_normalizer else {},
                 "metrics": m,
             }, ckpt_path)
 

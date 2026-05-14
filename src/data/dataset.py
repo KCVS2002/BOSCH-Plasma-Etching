@@ -180,6 +180,9 @@ class WaferRecord:
     points_Y_norm: np.ndarray | None = None
     points_si_norm: np.ndarray | None = None
     points_ox_norm: np.ndarray | None = None
+    # Optional wafer-level XGB features for DL injection (filled if store configured)
+    xgb_feats_raw: np.ndarray | None = None  # (K,) float32 raw
+    xgb_feats: np.ndarray | None = None      # (K,) float32 normalized
 
 
 @dataclass
@@ -215,6 +218,7 @@ class WaferCycleStore:
         t_o: int = 128,
         t_p: int = 30,
         proc_keep_channels: Sequence[str] | None = None,
+        xgb_feat_names: Sequence[str] | None = None,
     ):
         self.cache_root = Path(cache_root)
         self.t_o = t_o
@@ -230,6 +234,24 @@ class WaferCycleStore:
         self.y_stats: ScalarStats | None = None
         self.si_stats: ScalarStats | None = None
         self.ox_stats: ScalarStats | None = None
+        # XGB feature injection support (None = disabled)
+        self.xgb_feat_names: list[str] | None = list(xgb_feat_names) if xgb_feat_names else None
+        self._xgb_df: "pd.DataFrame | None" = None  # lazy-loaded feature table
+        self.xgb_normalizer: Normalizer | None = None
+
+    def _get_xgb_df(self) -> "pd.DataFrame":
+        """Lazily load the wafer-level XGB feature table, indexed by experiment_key."""
+        if self._xgb_df is None:
+            import pandas as pd
+            feat_dir = self.cache_root / "features"
+            pq = feat_dir / "baseline_xgb_v1.parquet"
+            csv = feat_dir / "baseline_xgb_v1.csv"
+            df = pd.read_parquet(pq) if pq.exists() else pd.read_csv(csv)
+            missing = [c for c in (self.xgb_feat_names or []) if c not in df.columns]
+            if missing:
+                raise ValueError(f"XGB feature columns not found in feature table: {missing}")
+            self._xgb_df = df.set_index("experiment_key")
+        return self._xgb_df
 
     def discover_common_proc_channels(self, keys: Sequence[str]) -> list[str]:
         """Scan all wafers' `process_features` and choose channel names common
@@ -308,6 +330,13 @@ class WaferCycleStore:
             points_si=meas_w["si_etch"].to_numpy(dtype=np.float32),
             points_ox=meas_w["oxide_etch"].to_numpy(dtype=np.float32),
         )
+
+        if self.xgb_feat_names is not None:
+            xdf = self._get_xgb_df()
+            rec.xgb_feats_raw = (
+                xdf.loc[experiment_key, self.xgb_feat_names].to_numpy(dtype=np.float32)
+            )
+
         self._records[experiment_key] = rec
         return rec
 
@@ -328,6 +357,15 @@ class WaferCycleStore:
         self.oes_normalizer = fit_oes_normalizer(oes_iter)
         proc_iter = (self._records[k].proc_raw for k in train_keys)
         self.proc_normalizer = fit_proc_normalizer(proc_iter)
+
+        if self.xgb_feat_names is not None:
+            # Each wafer contributes one (K,) vector; fit_proc_normalizer handles that.
+            xgb_iter = (
+                self._records[k].xgb_feats_raw
+                for k in train_keys
+                if self._records[k].xgb_feats_raw is not None
+            )
+            self.xgb_normalizer = fit_proc_normalizer(xgb_iter)
 
         # Spatial + target stats — flat-aggregate over all points of train wafers.
         Xs = np.concatenate([self._records[k].points_X for k in train_keys])
@@ -365,6 +403,8 @@ class WaferCycleStore:
             rec.points_Y_norm = self.y_stats.apply(rec.points_Y)
             rec.points_si_norm = self.si_stats.apply(rec.points_si)
             rec.points_ox_norm = self.ox_stats.apply(rec.points_ox)
+            if self.xgb_normalizer is not None and rec.xgb_feats_raw is not None:
+                rec.xgb_feats = self.xgb_normalizer.apply(rec.xgb_feats_raw).astype(np.float32)
             if drop_raw:
                 rec.oes_raw = np.empty(0, dtype=np.float32)
                 rec.proc_raw = np.empty(0, dtype=np.float32)
@@ -384,6 +424,10 @@ class WaferCycleStore:
     @property
     def n_wavelengths(self) -> int:
         return 0 if self.wavelengths is None else int(len(self.wavelengths))
+
+    @property
+    def n_xgb_feats(self) -> int:
+        return len(self.xgb_feat_names) if self.xgb_feat_names is not None else 0
 
 
 class WaferDataset(Dataset):
@@ -436,6 +480,8 @@ class WaferDataset(Dataset):
             out["oes"] = torch.from_numpy(rec.oes)
         if self.modality in ("proc", "multimodal"):
             out["proc"] = torch.from_numpy(rec.proc)
+        if rec.xgb_feats is not None:
+            out["xgb_feat"] = torch.from_numpy(rec.xgb_feats)  # (K,) wafer-level
         return out
 
 

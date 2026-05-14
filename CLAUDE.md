@@ -11,6 +11,17 @@ BOSCH DRIE 플라즈마 에칭 공정의 Virtual Metrology — OES + Process 센
 
 자세한 도메인·전략은 [docs/연구계획서_초안.md](docs/연구계획서_초안.md) 참조.
 
+### 1.1 현재 진행 상황 (2026-05-08)
+
+- **Phase 1·2 완료, Phase 3 single-fold 완료, Phase 4 일부 완료, 중간 발표 마침.**
+- **Best 모델:** [outputs/experiments/2026-05-01_00-56_dl-multimodal-singlefold/](outputs/experiments/2026-05-01_00-56_dl-multimodal-singlefold/) — Multimodal (FiLM + Fourier xy + mean pool). oxide RMSE 0.0399 / R² 0.734 (XGB 대비 -22%, 졸업논문 종료기준 1번 달성).
+- **다음 작업 후보:** ① 5-fold 확장으로 안정성 (std/mean ≤ 10%) 검증, ② sequence/encoder ablation (연구계획서 Exp 5/6), ③ 해석 분석 확장 (현재 oxide fold0 만).
+- **확정된 설계 결정** (다른 agent 가 다시 시도하지 말 것):
+  - `pool=attention` 은 oxide 에서 악화 → mean pool 유지
+  - `use_film=true`, `xy_n_freqs=6` 필수 (없으면 si RMSE 폭발)
+  - OES-only, Proc-only ablation 완료. multimodal 이 둘보다 +0.094 R² 우월
+- 자세한 진행 상황·실험 폴더 라벨링은 [memory/project_progress.md](memory/project_progress.md), [memory/reference_experiments.md](memory/reference_experiments.md), [memory/project_dl_design_decisions.md](memory/project_dl_design_decisions.md) 참조.
+
 ---
 
 ## 2. 폴더 구조와 각 폴더의 역할
