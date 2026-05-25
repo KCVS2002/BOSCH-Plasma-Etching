@@ -118,6 +118,12 @@ def main() -> None:
                         help="cache version (output goes to cache/<version>/)")
     parser.add_argument("--limit", type=int, default=None,
                         help="process only the first N measured wafers (smoke testing)")
+    parser.add_argument(
+        "--day",
+        type=str,
+        default=None,
+        help="only process wafers whose measurement 'day' equals this value (format: YYYY_MM_DD)",
+    )
     parser.add_argument("--overwrite", action="store_true",
                         help="re-process wafers whose npz already exists")
     args = parser.parse_args()
@@ -128,6 +134,13 @@ def main() -> None:
 
     all_wafers = list_wafers()
     meas = load_measurements_89()
+    # Optional day filter: restrict measurements and wafers to the specified day.
+    # The measurements CSV doesn't have a `day` column, so match by the
+    # `experiment_key` prefix (YYYY-MM-DD) derived from the provided
+    # YYYY_MM_DD input.
+    if args.day is not None:
+        day_dash = args.day.replace("_", "-")
+        meas = meas[meas["experiment_key"].str.startswith(day_dash)]
     measured_keys = set(meas["experiment_key"].unique())
     wafers = [w for w in all_wafers if w.experiment_key in measured_keys]
     wafers.sort(key=lambda w: (w.lot_number, w.wafer_num))

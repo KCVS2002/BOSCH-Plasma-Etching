@@ -391,6 +391,29 @@ def main() -> None:
     cache_root = PROJECT_ROOT / "cache" / cfg["data"]["cache_version"]
     meas = _load_measurements(cache_root)
     split = load_split(cache_root / cfg["data"]["split_file"])
+
+    # If the loaded split references wafers not present in this cache's
+    # measurements (e.g. per-day caches), restrict the split to the
+    # intersection so downstream code doesn't KeyError on missing wafers.
+    meas_keys = sorted(set(meas["experiment_key"].astype(str).tolist()))
+    split_keys = [str(k) for k in split.wafer_keys]
+    if any(k not in meas_keys for k in split_keys):
+        keep_idx = [i for i, k in enumerate(split_keys) if k in meas_keys]
+        import numpy as _np
+        new_wafer_keys = _np.array([split_keys[i] for i in keep_idx], dtype=object)
+        new_wafer_fold_id = split.wafer_fold_id[keep_idx].astype(int)
+        # Simplify sample_fold_id to zeros for the reduced set (89 samples per wafer)
+        new_sample_fold_id = _np.zeros(len(new_wafer_keys) * 89, dtype=int)
+        # Replace split with a reduced Split-like object (duck-typed)
+        from src.evaluation.splits import Split as _Split
+        split = _Split(
+            sample_fold_id=new_sample_fold_id,
+            wafer_fold_id=new_wafer_fold_id,
+            wafer_keys=new_wafer_keys,
+            n_folds=int(new_wafer_fold_id.max() + 1) if len(new_wafer_fold_id) else 1,
+            method=(split.method + " (filtered)") if hasattr(split, 'method') else "filtered",
+            extras=split.extras if hasattr(split, 'extras') else {},
+        )
     # Priority: CLI --limit-folds > config experiment.limit_folds > default 1 (single fold)
     cfg_limit = cfg["experiment"].get("limit_folds", 1)
     cli_limit = args.limit_folds
