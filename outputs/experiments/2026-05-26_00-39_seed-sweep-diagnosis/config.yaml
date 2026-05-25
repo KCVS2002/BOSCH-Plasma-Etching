@@ -1,0 +1,14 @@
+diagnosis:
+  base_config: configs\exp_dl_multimodal_5fold.yaml
+  target: oxide_etch
+  fold: 4
+  seeds:
+  - 42
+  - 43
+  - 44
+  - 45
+  - 46
+  run_training: false
+  input_experiments:
+  - outputs/experiments/2026-05-25_23-27_dl-multimodal-5fold
+failures: []

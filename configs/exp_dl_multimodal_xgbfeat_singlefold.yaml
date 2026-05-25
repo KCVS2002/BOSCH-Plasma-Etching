@@ -30,7 +30,7 @@ data:
   cache_version: "v1"
   split_file: "splits/kfold5_wafer.npz"
   spatial_features: ["X", "Y"]
-  targets: ["oxide_etch", "si_etch"]
+  targets: ["oxide_etch"]   # primary research target; si_etch is saturated and skipped for speed
   modality: "multimodal"
   t_o: 128
   t_p: 30

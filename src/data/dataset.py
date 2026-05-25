@@ -452,6 +452,7 @@ class WaferDataset(Dataset):
         wafer_keys: Sequence[str],
         target: str,
         modality: str = "multimodal",
+        oes_band_idx: np.ndarray | None = None,
     ):
         if modality not in {"oes", "proc", "multimodal"}:
             raise ValueError(f"unknown modality {modality!r}")
@@ -462,6 +463,9 @@ class WaferDataset(Dataset):
         self.target = target
         self.target_attr_norm = "points_si_norm" if target == "si_etch" else "points_ox_norm"
         self.modality = modality
+        self.oes_band_idx = (
+            np.asarray(oes_band_idx, dtype=np.int64) if oes_band_idx is not None else None
+        )
 
     def __len__(self) -> int:
         return len(self.keys)
@@ -477,7 +481,11 @@ class WaferDataset(Dataset):
             "target": torch.from_numpy(target_norm),     # (89,)   — z-scored target
         }
         if self.modality in ("oes", "multimodal"):
-            out["oes"] = torch.from_numpy(rec.oes)
+            oes = rec.oes
+            if self.oes_band_idx is not None:
+                # Fancy indexing returns a contiguous copy — safe for torch.from_numpy
+                oes = oes[:, :, self.oes_band_idx]
+            out["oes"] = torch.from_numpy(oes)
         if self.modality in ("proc", "multimodal"):
             out["proc"] = torch.from_numpy(rec.proc)
         if rec.xgb_feats is not None:

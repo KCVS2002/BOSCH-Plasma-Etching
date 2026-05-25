@@ -1,0 +1,91 @@
+# Method 2 — OES wavelength selection via train-fold |Pearson corr| with target.
+#
+# Hypothesis: 3648 wavelengths is too wide for 88 wafers; the OES branch
+# spends much of its capacity learning *which* spectral regions matter
+# before it can learn the actual etch dynamics. Focusing on top-k
+# wavelengths correlated with oxide on the TRAIN fold should raise signal
+# density and reduce overfitting noise.
+#
+# Per-fold selection (no leakage):
+#   - For each TRAIN wafer, compute one wavelength-vector statistic
+#     (default `late_mean` = mean over log1p OES in cycles 80~100).
+#   - Pearson correlation between (n_train, W) feature and (n_train,)
+#     wafer-mean target.
+#   - Top-k wavelengths by |corr|.
+#   - WaferDataset slices `rec.oes[:, :, band_idx]` per __getitem__.
+#
+# Why stride_chan=2 (vs 4 in baseline):
+#   Baseline used stride_chan=4 over n_blocks=4 to compress 3648 → ~14
+#   before AdaptiveAvgPool. With top_k=256 the same recipe collapses to
+#   ~1, leaving the pool no spatial extent. Halving the stride keeps
+#   the final feature map width near the original ~14.
+#
+# Baseline to compare against: outputs/experiments/2026-05-21_02-09_dl-multimodal-5fold/
+
+experiment:
+  title: "dl multimodal oes corr topk 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256             # 3648 → 256 (~14x reduction)
+    stat: "late_mean"      # "mean" | "late_mean" | "drift"
+    late_start_cycle: 80   # 1-based; matches MeanLateDriftPool default
+    early_end_cycle: 20    # used only when stat="drift"
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256     # overridden at runtime to len(oes_band_idx)
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2       # halved from baseline (4) — input is already narrower
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+
+training:
+  epochs: 40
+  batch_size: 4
+  lr: 1.5e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 8
+  loss: "mse"
+  num_workers: 0
+  amp: false

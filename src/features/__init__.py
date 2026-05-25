@@ -5,12 +5,18 @@ from .cycle_stats import (
     per_cycle_process_means,
     summarise_cycle_series,
 )
+from .oes_selection import (
+    compute_oes_wavelength_scores,
+    select_top_k_wavelengths,
+)
 
 __all__ = [
     "build_wafer_feature_table",
+    "compute_oes_wavelength_scores",
     "extract_baseline_features_one_wafer",
     "load_or_build_features",
     "per_cycle_oes_band_means",
     "per_cycle_process_means",
+    "select_top_k_wavelengths",
     "summarise_cycle_series",
 ]

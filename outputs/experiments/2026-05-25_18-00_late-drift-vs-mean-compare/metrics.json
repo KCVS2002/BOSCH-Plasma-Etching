@@ -1,0 +1,20 @@
+{
+  "target": "oxide_etch",
+  "n_folds": 5,
+  "improved_folds": 2,
+  "mean_pool": {
+    "rmse_mean": 0.053644628966758055,
+    "r2_mean": 0.504656433457373,
+    "mae_mean": 0.03628777583881066
+  },
+  "mean_late_drift_pool": {
+    "rmse_mean": 0.05535231148738458,
+    "r2_mean": 0.4783944475771878,
+    "mae_mean": 0.03704094375498446
+  },
+  "delta_late_minus_mean": {
+    "rmse_mean": 0.0017076825206265203,
+    "r2_mean": -0.026261985880185072
+  },
+  "conclusion": "Mean pooling remains better on average; late-drift pooling improved 2 of 5 folds but worsened aggregate RMSE and R2."
+}

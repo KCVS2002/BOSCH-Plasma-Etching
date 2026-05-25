@@ -1,0 +1,39 @@
+{
+  "summary": [
+    {
+      "experiment_dir": "outputs\\experiments\\2026-05-25_23-27_dl-multimodal-5fold",
+      "target": "oxide_etch",
+      "fold": 4,
+      "rmse": 0.06768153713387173,
+      "mae": 0.04564789324515173,
+      "r2": 0.26827917305778337,
+      "mape_pct": 7.2460154159578956,
+      "best_epoch": 38,
+      "fit_seconds": 1353.73,
+      "bias_pred_minus_true": 0.0009827377569958215,
+      "true_std": 0.07912204530825935,
+      "pred_std": 0.050357962909807825,
+      "point_corr": 0.5291099421577461,
+      "wafer_mean_slope": 0.31179035062745974,
+      "wafer_mean_corr": 0.45847783477372617,
+      "true_mean_min": 0.5728502390759714,
+      "true_mean_max": 0.6986135880598862,
+      "pred_mean_min": 0.6034092936622962,
+      "pred_mean_max": 0.697865403100346,
+      "train_target_mean": 0.6594144105911255,
+      "val_target_mean": 0.6532235145568848,
+      "target_mean_shift": -0.006190896034240723,
+      "train_rmse_at_best": 0.060042,
+      "min_train_rmse": 0.060042,
+      "last_train_rmse": 0.062619
+    }
+  ],
+  "aggregate": {
+    "rmse_mean": 0.06768153713387173,
+    "rmse_std": 0.0,
+    "r2_mean": 0.26827917305778337,
+    "r2_std": 0.0,
+    "pred_std_mean": 0.050357962909807825,
+    "wafer_mean_slope_mean": 0.31179035062745974
+  }
+}

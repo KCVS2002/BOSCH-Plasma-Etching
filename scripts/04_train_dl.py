@@ -43,6 +43,10 @@ from src.data import (
     WaferDataset,
 )
 from src.evaluation import aggregate_folds, load_split, regression_metrics
+from src.features import (
+    compute_oes_wavelength_scores,
+    select_top_k_wavelengths,
+)
 from src.models import make_model
 from src.utils import make_experiment_dir, set_seed
 
@@ -148,12 +152,44 @@ def train_one_fold(
     target_stats = store.si_stats if target == "si_etch" else store.ox_stats
     log(f"    target {target} stats: mean={target_stats.mean:.4f} std={target_stats.std:.4f}")
 
+    # ---- Per-fold OES wavelength selection (no leakage: train wafers only) ----
+    oes_band_idx: np.ndarray | None = None
+    sel_cfg = cfg["data"].get("oes_band_selection")
+    if sel_cfg and modality in ("oes", "multimodal"):
+        method = str(sel_cfg.get("method", "correlation"))
+        if method != "correlation":
+            raise ValueError(
+                f"unsupported oes_band_selection.method {method!r} "
+                "(only 'correlation' implemented)"
+            )
+        stat = str(sel_cfg.get("stat", "late_mean"))
+        top_k = int(sel_cfg["top_k"])
+        t_b = time.time()
+        log(f"    [oes-band] correlation selection: stat={stat}, top_k={top_k}, "
+            f"train_wafers={len(train_keys)}")
+        scores = compute_oes_wavelength_scores(
+            cache_root=store.cache_root,
+            train_keys=train_keys,
+            meas=store.meas,
+            target=target,
+            stat=stat,
+            late_start_cycle=int(sel_cfg.get("late_start_cycle", 80)),
+            early_end_cycle=int(sel_cfg.get("early_end_cycle", 20)),
+        )
+        oes_band_idx = select_top_k_wavelengths(scores, top_k=top_k)
+        log(f"    [oes-band] selected {len(oes_band_idx)}/{len(scores)} wavelengths "
+            f"(max|corr|={float(scores.max()):.3f}, "
+            f"min selected |corr|={float(scores[oes_band_idx].min()):.3f}, "
+            f"{time.time()-t_b:.1f}s)")
+
     # ---- Build wafer-level datasets ----
     train_ds = WaferDataset(
-        store=store, wafer_keys=train_keys, target=target, modality=modality
+        store=store, wafer_keys=train_keys, target=target, modality=modality,
+        oes_band_idx=oes_band_idx,
     )
     val_ds = WaferDataset(
-        store=store, wafer_keys=val_keys, target=target, modality=modality
+        store=store, wafer_keys=val_keys, target=target, modality=modality,
+        oes_band_idx=oes_band_idx,
     )
 
     # batch_size = wafers per step. 89 points share the same wafer encoder
@@ -166,11 +202,18 @@ def train_one_fold(
     val_dl = DataLoader(val_ds, batch_size=bs, shuffle=False, num_workers=nw,
                         pin_memory=False)
 
-    # ---- Build model (override proc in_channels with actual count) ----
+    # ---- Build model (override proc/oes in_channels with actual count) ----
     params = dict(cfg["model"]["params"])
     if params.get("proc_encoder") is not None and modality in ("proc", "multimodal"):
         params["proc_encoder"] = dict(params["proc_encoder"])
         params["proc_encoder"]["in_channels"] = store.n_proc_channels
+    if (
+        params.get("oes_encoder") is not None
+        and modality in ("oes", "multimodal")
+        and oes_band_idx is not None
+    ):
+        params["oes_encoder"] = dict(params["oes_encoder"])
+        params["oes_encoder"]["in_channels"] = int(len(oes_band_idx))
 
     model = make_model(cfg["model"]["name"], params).to(device)
 
@@ -355,6 +398,9 @@ def train_one_fold(
         "x_stats": store.x_stats.state_dict() if store.x_stats is not None else {},
         "y_stats": store.y_stats.state_dict() if store.y_stats is not None else {},
         "proc_kept_names": list(store.proc_kept_names) if store.proc_kept_names is not None else [],
+        "oes_band_idx": (
+            oes_band_idx.tolist() if oes_band_idx is not None else None
+        ),
     }
     return (metrics, oes_n, proc_n, v_pred, fold_stats), best_state, epoch_log_rows, sample_rows
 
@@ -368,6 +414,8 @@ def main() -> None:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--limit-folds", type=int, default=None,
                         help="override config limit_folds (e.g. --limit-folds 5 for full CV)")
+    parser.add_argument("--folds", type=str, default=None,
+                        help="comma-separated fold ids to run (e.g. 4 or 2,4); overrides --limit-folds")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
@@ -391,13 +439,22 @@ def main() -> None:
     cache_root = PROJECT_ROOT / "cache" / cfg["data"]["cache_version"]
     meas = _load_measurements(cache_root)
     split = load_split(cache_root / cfg["data"]["split_file"])
-    # Priority: CLI --limit-folds > config experiment.limit_folds > default 1 (single fold)
+    # Priority: CLI --folds > CLI --limit-folds > config experiment.limit_folds > default 1
     cfg_limit = cfg["experiment"].get("limit_folds", 1)
     cli_limit = args.limit_folds
-    effective_limit = cli_limit if cli_limit is not None else cfg_limit
-    n_folds = min(effective_limit, split.n_folds) if effective_limit is not None else split.n_folds
+    if args.folds is not None:
+        fold_ids = [int(x.strip()) for x in args.folds.split(",") if x.strip()]
+        if not fold_ids:
+            raise ValueError("--folds was provided but no fold ids were parsed")
+        bad = [f for f in fold_ids if f < 0 or f >= split.n_folds]
+        if bad:
+            raise ValueError(f"fold ids out of range for {split.n_folds} folds: {bad}")
+    else:
+        effective_limit = cli_limit if cli_limit is not None else cfg_limit
+        n_folds = min(effective_limit, split.n_folds) if effective_limit is not None else split.n_folds
+        fold_ids = list(range(n_folds))
     log(f"Cache: {cache_root.relative_to(PROJECT_ROOT)}  |  split: {cfg['data']['split_file']} "
-        f"({split.method}, running {n_folds}/{split.n_folds} folds)")
+        f"({split.method}, running folds {fold_ids} of {split.n_folds})")
 
     targets = list(cfg["data"]["targets"])
     log(f"Targets: {targets}  |  modality: {cfg['data']['modality']}")
@@ -435,13 +492,17 @@ def main() -> None:
     all_epoch_rows: list[dict] = []
     all_sample_rows: list[dict] = []
 
-    for target in targets:
+    base_seed = int(cfg["experiment"]["seed"])
+    for target_idx, target in enumerate(targets):
         log(f"\n=== Target: {target} ===")
         per_fold: list[dict] = []
-        for f in range(n_folds):
+        for f in fold_ids:
             heldout_lot = _fold_lot(split, f)
             fold_label = f"fold {f}" if heldout_lot is None else f"fold {f} (held-out lot {heldout_lot})"
             log(f"  -- {fold_label} --")
+            fold_seed = base_seed + target_idx * 1000 + f
+            set_seed(fold_seed)
+            log(f"    [seed] reset RNG for target/fold: {fold_seed}")
             t0 = time.time()
 
             # build train/val wafer key lists
@@ -501,10 +562,16 @@ def main() -> None:
                 "x_stats": fold_stats["x_stats"],
                 "y_stats": fold_stats["y_stats"],
                 "proc_kept_names": fold_stats["proc_kept_names"],
+                "oes_band_idx": fold_stats["oes_band_idx"],
                 "xgb_feat_names": list(store.xgb_feat_names) if store.xgb_feat_names else [],
                 "xgb_normalizer": store.xgb_normalizer.state_dict() if store.xgb_normalizer else {},
                 "metrics": m,
             }, ckpt_path)
+            if fold_stats["oes_band_idx"] is not None:
+                np.save(
+                    exp_dir / "logs" / f"oes_band_idx_{target}_fold{f}.npy",
+                    np.asarray(fold_stats["oes_band_idx"], dtype=np.int32),
+                )
 
             log(f"    final: rmse={m['rmse']:.4f}  mae={m['mae']:.4f}  "
                 f"r2={m['r2']:.4f}  mape={m['mape_pct']:.2f}%  "

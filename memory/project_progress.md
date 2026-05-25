@@ -4,6 +4,39 @@ description: Phase-by-phase progress log — current state as of 2026-05-08 (mid
 type: project
 ---
 
+## 한눈에 보기 (2026-05-26 업데이트)
+
+- **연구 초점은 `oxide_etch`로 좁힘.** `si_etch`는 spatial pattern 만으로도 대부분 포화되어 새 DL 실험에서는 학습 시간 절약을 위해 제외한다.
+- **DL 5-fold 검증 완료:** `outputs/experiments/2026-05-21_02-09_dl-multimodal-5fold/`
+  - 기본 multimodal mean-pool DL oxide 결과: RMSE `0.0507±0.0133`, R² `0.5426±0.2316`
+  - fold 0/1/3은 양호, fold 2 약함, **fold 4가 심하게 붕괴** (RMSE `0.0730`, R² `0.149`)
+- **fold 4 이슈가 현재 최우선 진단 대상.**
+  - XGBoost fold 4는 RMSE `0.0487`, R² `0.621`로 괜찮음 → fold 4가 예측 불가능한 것은 아님.
+  - DL fold 4는 prediction std와 wafer-mean slope가 낮아지는 **wafer-level calibration / mean-shrinkage 실패**가 반복됨.
+  - fold 4는 평균 target shift가 크지는 않지만 low/high oxide wafer 조합을 DL이 잘 구분하지 못함.
+- **Method 4 (mean+late+drift pooling) 결과 병합됨:** `configs/exp_dl_late_drift_oxide_5fold.yaml`, 비교 폴더 `outputs/experiments/2026-05-25_18-00_late-drift-vs-mean-compare/`
+  - fold 2/4는 약간 개선하지만 aggregate는 mean pool보다 나쁨. fold 4 붕괴는 해결 못함.
+- **Method 5 (Process-conditioned OES FiLM) 구현 및 실행됨:** `configs/exp_dl_multimodal_procfilm_singlefold.yaml`, 결과 `outputs/experiments/2026-05-25_17-38_dl-multimodal-procfilm-singlefold/`
+  - oxide RMSE `0.0513±0.0121`, R² `0.538±0.215`; fold 4는 여전히 RMSE `0.0731`, R² `0.147`
+  - 따라서 fold 4 실패는 procfilm 모듈 고유 문제가 아니라 DL 공통 문제에 가까움.
+- **학습 스크립트 수정:** `scripts/04_train_dl.py`
+  - target/fold마다 RNG seed 재설정: `fold_seed = base_seed + target_idx * 1000 + fold`
+  - `--folds 4` 같은 선택 fold 실행 옵션 추가
+  - fold 4 seed-reset 재실험: `outputs/experiments/2026-05-25_23-27_dl-multimodal-5fold/`
+    - RMSE `0.0677`, R² `0.268`, prediction std `0.050`, wafer-mean slope `0.312`
+    - 기존보다 개선됐지만 다른 fold보다 여전히 낮음 → seed/optimization 문제와 fold-specific DL representation failure가 섞여 있음.
+- **seed sweep 진단 스크립트 추가:** `scripts/08_diagnose_seed_sweep.py`
+  - fold 4를 seed 여러 개로 반복 실행하고 `seed_sweep_summary.csv`, `worst_wafers.csv`를 저장한다.
+  - 권장 명령:
+    ```powershell
+    .\.venv\Scripts\python.exe -m scripts.08_diagnose_seed_sweep --config configs/exp_dl_multimodal_5fold.yaml --fold 4 --seeds 42,43,44,45,46 --run
+    ```
+- 상세 기록은 `docs/progress_update_2026-05-26.md` 참조.
+
+**How to apply now:** 다음 agent는 새 DL 실험을 돌릴 때 기본적으로 oxide-only config를 사용한다. 성능 개선보다 먼저 fold 4 seed sweep을 통해 "운 나쁜 seed"인지 "fold-specific representation failure"인지 확인한다. fold 4가 여러 seed에서 계속 낮으면 residual correction 또는 explicit process temporal feature injection 쪽이 다음 우선순위다.
+
+---
+
 ## 한눈에 보기 (2026-05-08 기준)
 
 - **Phase 1 (전처리/캐시) ✅ 완료**

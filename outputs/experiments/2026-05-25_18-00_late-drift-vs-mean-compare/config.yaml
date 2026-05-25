@@ -1,0 +1,16 @@
+experiment:
+  title: late drift vs mean compare
+  created_at: "2026-05-25 18:00"
+  type: cross_experiment_comparison
+  seed: 42
+inputs:
+  baseline_config: configs/exp_dl_mean_oxide_5fold.yaml
+  candidate_config: configs/exp_dl_late_drift_oxide_5fold.yaml
+  comparison_csv: logs/late_drift_vs_mean_compare.csv
+comparison:
+  target: oxide_etch
+  baseline_pool: mean
+  candidate_pool: mean_late_drift
+  metric_direction:
+    rmse: lower_is_better
+    r2: higher_is_better
