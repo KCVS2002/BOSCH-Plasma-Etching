@@ -80,6 +80,35 @@ def _forward(model: nn.Module, batch: dict) -> torch.Tensor:
     )
 
 
+def _fold_lot(split, fold: int) -> int | None:
+    """Return the held-out lot id when the split file provides one."""
+    mapping = split.extras.get("fold_lot_mapping")
+    if mapping is None:
+        return None
+    if fold >= len(mapping):
+        return None
+    return int(mapping[fold])
+
+
+def _write_partial_outputs(
+    *,
+    exp_dir: Path,
+    metrics_out: dict[str, dict],
+    fold_csv_rows: list[dict],
+    all_epoch_rows: list[dict],
+    all_sample_rows: list[dict],
+    log_lines: list[str],
+) -> None:
+    """Persist progress after each fold so interrupted long CV runs remain usable."""
+    (exp_dir / "metrics.json").write_text(
+        json.dumps(metrics_out, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    pd.DataFrame(fold_csv_rows).to_csv(exp_dir / "logs" / "fold_metrics.csv", index=False)
+    pd.DataFrame(all_epoch_rows).to_csv(exp_dir / "logs" / "epoch_log.csv", index=False)
+    pd.DataFrame(all_sample_rows).to_csv(exp_dir / "logs" / "sample_predictions.csv", index=False)
+    (exp_dir / "logs" / "stdout.log").write_text("\n".join(log_lines), encoding="utf-8")
+
+
 # ----------------------------------------------------------------------
 # Per-fold training
 # ----------------------------------------------------------------------
@@ -410,7 +439,9 @@ def main() -> None:
         log(f"\n=== Target: {target} ===")
         per_fold: list[dict] = []
         for f in range(n_folds):
-            log(f"  -- fold {f} --")
+            heldout_lot = _fold_lot(split, f)
+            fold_label = f"fold {f}" if heldout_lot is None else f"fold {f} (held-out lot {heldout_lot})"
+            log(f"  -- {fold_label} --")
             t0 = time.time()
 
             # build train/val wafer key lists
@@ -428,10 +459,31 @@ def main() -> None:
                 log=log,
             )
             m["fit_seconds"] = round(time.time() - t0, 2)
+            if heldout_lot is not None:
+                m["heldout_lot"] = heldout_lot
+            train_target_values = np.concatenate([
+                store[k].points_ox if target == "oxide_etch" else store[k].points_si
+                for k in train_keys
+            ])
+            val_target_values = np.concatenate([
+                store[k].points_ox if target == "oxide_etch" else store[k].points_si
+                for k in val_keys
+            ])
+            m["train_target_mean"] = float(train_target_values.mean())
+            m["train_target_std"] = float(train_target_values.std(ddof=0))
+            m["val_target_mean"] = float(val_target_values.mean())
+            m["val_target_std"] = float(val_target_values.std(ddof=0))
+            m["target_mean_shift"] = float(val_target_values.mean() - train_target_values.mean())
             per_fold.append(m)
             fold_csv_rows.append({"target": target, **m})
             for r in epoch_rows:
-                all_epoch_rows.append({"target": target, "fold": f, **r})
+                row = {"target": target, "fold": f, **r}
+                if heldout_lot is not None:
+                    row["heldout_lot"] = heldout_lot
+                all_epoch_rows.append(row)
+            for r in sample_rows:
+                if heldout_lot is not None:
+                    r["heldout_lot"] = heldout_lot
             all_sample_rows.extend(sample_rows)
 
             ckpt_dir = exp_dir / "checkpoints"
@@ -442,6 +494,7 @@ def main() -> None:
                 "config": cfg,
                 "target": target,
                 "fold": f,
+                "heldout_lot": heldout_lot,
                 "oes_normalizer": oes_n,
                 "proc_normalizer": proc_n,
                 "target_stats": fold_stats["target_stats"],
@@ -457,19 +510,46 @@ def main() -> None:
                 f"r2={m['r2']:.4f}  mape={m['mape_pct']:.2f}%  "
                 f"({m['fit_seconds']:.1f}s, best_ep={m['best_epoch']})")
 
-        agg = aggregate_folds(per_fold)
+            partial_agg = aggregate_folds([
+                {k: v for k, v in row.items() if k != "heldout_lot"}
+                for row in per_fold
+            ])
+            metrics_out[target] = {"per_fold": per_fold, "aggregate": partial_agg}
+            _write_partial_outputs(
+                exp_dir=exp_dir,
+                metrics_out=metrics_out,
+                fold_csv_rows=fold_csv_rows,
+                all_epoch_rows=all_epoch_rows,
+                all_sample_rows=all_sample_rows,
+                log_lines=log_lines,
+            )
+
+        agg = aggregate_folds([
+            {k: v for k, v in row.items() if k != "heldout_lot"}
+            for row in per_fold
+        ])
         log(f"  AGG    rmse={agg['rmse_mean']:.4f}±{agg['rmse_std']:.4f}  "
             f"r2={agg['r2_mean']:.4f}±{agg['r2_std']:.4f}")
         metrics_out[target] = {"per_fold": per_fold, "aggregate": agg}
 
+        _write_partial_outputs(
+            exp_dir=exp_dir,
+            metrics_out=metrics_out,
+            fold_csv_rows=fold_csv_rows,
+            all_epoch_rows=all_epoch_rows,
+            all_sample_rows=all_sample_rows,
+            log_lines=log_lines,
+        )
+
     # ---- Persist outputs ----
-    (exp_dir / "metrics.json").write_text(
-        json.dumps(metrics_out, indent=2, ensure_ascii=False), encoding="utf-8"
+    _write_partial_outputs(
+        exp_dir=exp_dir,
+        metrics_out=metrics_out,
+        fold_csv_rows=fold_csv_rows,
+        all_epoch_rows=all_epoch_rows,
+        all_sample_rows=all_sample_rows,
+        log_lines=log_lines,
     )
-    pd.DataFrame(fold_csv_rows).to_csv(exp_dir / "logs" / "fold_metrics.csv", index=False)
-    pd.DataFrame(all_epoch_rows).to_csv(exp_dir / "logs" / "epoch_log.csv", index=False)
-    pd.DataFrame(all_sample_rows).to_csv(exp_dir / "logs" / "sample_predictions.csv", index=False)
-    (exp_dir / "logs" / "stdout.log").write_text("\n".join(log_lines), encoding="utf-8")
 
     notes_path = exp_dir / "NOTES.md"
     extra = ["\n## 자동 기록된 결과 (DL training script)\n"]

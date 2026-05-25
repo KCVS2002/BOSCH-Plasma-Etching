@@ -1,0 +1,29 @@
+Experiment dir: outputs\experiments\2026-05-22_12-54_dl-multimodal-loo-lot-oxide
+Config: configs\exp_dl_multimodal_loo_lot_oxide.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/loo_lot.npz (LeaveOneGroupOut(group=lot), running 1/10 folds)
+Targets: ['oxide_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 247.4s  (discover=0.8 load=246.6)
+[setup] proc channels kept: 31
+[setup] XGB injection features: 0 (disabled)
+[setup] normalisation deferred to per-fold (no val leakage)
+
+=== Target: oxide_etch ===
+  -- fold 0 (held-out lot 1) --
+    [fold-norm] fit on 79 train wafers (fold 0)...
+    [fold-norm] done (117.9s)
+    target oxide_etch stats: mean=0.6663 std=0.0734
+    ep   0 (123.8s): train_loss=1.0175 train_rmse=0.0740 val_rmse=0.1015 val_r2=-0.8640 val_mape=15.48%
+    ep   1 (110.3s): train_loss=0.9832 train_rmse=0.0728 val_rmse=0.1038 val_r2=-0.9476 val_mape=15.66%
+    ep   2 (110.6s): train_loss=0.9455 train_rmse=0.0714 val_rmse=0.1164 val_r2=-1.4511 val_mape=17.82%
+    ep   3 (110.4s): train_loss=0.9481 train_rmse=0.0715 val_rmse=0.1144 val_r2=-1.3667 val_mape=17.07%
+    ep   4 (106.7s): train_loss=0.9263 train_rmse=0.0706 val_rmse=0.1060 val_r2=-1.0328 val_mape=15.78%
+    ep   5 (106.7s): train_loss=0.9166 train_rmse=0.0703 val_rmse=0.1022 val_r2=-0.8894 val_mape=15.12%
+    ep   6 (106.4s): train_loss=0.8923 train_rmse=0.0693 val_rmse=0.1063 val_r2=-1.0436 val_mape=15.61%
+    ep   7 (106.6s): train_loss=0.8809 train_rmse=0.0689 val_rmse=0.1063 val_r2=-1.0429 val_mape=15.58%
+    ep   8 (106.5s): train_loss=0.8663 train_rmse=0.0683 val_rmse=0.1167 val_r2=-1.4645 val_mape=17.22%
+    early stop @ epoch 8 (best 0, val_rmse=0.1015)
+    final: rmse=0.1015  mae=0.0819  r2=-0.8640  mape=15.48%  (1111.6s, best_ep=0)
+  AGG    rmse=0.1015±0.0000  r2=-0.8640±0.0000

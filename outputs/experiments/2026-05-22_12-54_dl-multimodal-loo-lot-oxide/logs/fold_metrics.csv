@@ -1,0 +1,2 @@
+target,rmse,mae,r2,mape_pct,fold,best_epoch,n_train,n_val,fit_seconds,heldout_lot,train_target_mean,train_target_std,val_target_mean,val_target_std,target_mean_shift
+oxide_etch,0.10150116186038162,0.0818960511877891,-0.8639993724869033,15.481379029461776,0,0,7031,801,1111.56,1,0.6662517189979553,0.07338626682758331,0.5870156288146973,0.07434438169002533,-0.07923609018325806

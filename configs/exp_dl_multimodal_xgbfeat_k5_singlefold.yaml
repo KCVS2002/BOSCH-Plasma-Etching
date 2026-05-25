@@ -1,0 +1,91 @@
+# XGB Feature Injection — K=5 (minimal injection ablation)
+# Base: exp_dl_multimodal_xgbfeat_singlefold.yaml (K=15 version).
+# Change: K 15→5, xgb_proj_dim 32→16. Total head capacity roughly halved.
+#
+# Hypothesis: K=15 may have given the head too much capacity for 88 wafers,
+# causing slight overfitting (single-fold R²=0.696 vs baseline 0.734).
+# K=5 with one feature per physics regime tests whether minimal injection
+# of the most important features alone is enough — or whether XGB features
+# fundamentally don't add signal beyond what the cycle encoder captures.
+#
+# 5 features = 5 distinct process drivers (no within-group redundancy):
+#   1. Thermal     — Heater2Temp_late (SHAP #1)
+#   2. RF power    — PlatenRFLoadPower_slope  (etch rate drift)
+#   3. Ion energy  — PlatenDcBias_late
+#   4. Pressure    — Pressure_slope          (chemistry drift)
+#   5. Gas         — Gas2Flow_slope          (C4F8 passivation drift)
+#
+# Each uses the stat type best suited to its channel:
+#   - late:  end-state where final-cycle value matters (thermal soak, DC bias)
+#   - slope: drift direction across 100 cycles (mean pool destroys this)
+
+experiment:
+  title: "dl multimodal xgbfeat k5 singlefold"
+  seed: 42
+  limit_folds: 1
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch", "si_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  xgb_feat_names:
+    - proc_Heater2Temp_late          # thermal end-state (SHAP 1위)
+    - proc_PlatenRFLoadPower_slope   # RF etch power drift
+    - proc_PlatenDcBias_late         # ion bombardment energy end-state
+    - proc_Pressure_slope            # chamber pressure drift (chemistry)
+    - proc_Gas2Flow_slope            # C4F8 passivation gas drift (selectivity)
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 3648
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 4
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    # XGB injection — half the capacity of the K=15 variant
+    xgb_feat_dim: 5     # must equal len(data.xgb_feat_names)
+    xgb_proj_dim: 16    # 32 → 16 (head input: 256+64+16 = 336)
+
+training:
+  epochs: 40
+  batch_size: 4
+  lr: 1.5e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 12
+  loss: "mse"
+  num_workers: 0
+  amp: false
