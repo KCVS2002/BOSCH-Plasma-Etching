@@ -68,8 +68,10 @@ class CycleVMConfig:
     xy_enc_dim: int = 64       # output dim of xy encoder MLP
     use_film: bool = True      # FiLM-modulate wafer_repr by xy_enc per point
     # --- cycle aggregation ---
-    pool: str = "mean"         # "mean" (uniform) or "attention" (learned weights)
+    pool: str = "mean"         # "mean", "attention", or "mean_late_drift"
     attn_hidden: int = 64      # hidden dim of attention scoring MLP
+    late_start_cycle: int = 80 # 1-based: late window starts at cycle 80
+    early_end_cycle: int = 20  # 1-based: early window uses cycles 1~20
     # --- wafer-level XGB feature injection (before FiLM) ---
     # Set xgb_feat_dim=0 (default) to disable — identical to the original model.
     # When >0, the K XGB features are projected to xgb_proj_dim and concat'd to
@@ -176,6 +178,32 @@ class ProcessConditionedOESGate(nn.Module):
     def forward(self, oes_emb: torch.Tensor, proc_emb: torch.Tensor) -> torch.Tensor:
         gate = 2.0 * torch.sigmoid(self.gate(proc_emb))
         return gate * oes_emb
+
+
+class MeanLateDriftPool(nn.Module):
+    """Fixed pooling over cycles: global mean + late mean + late-early drift.
+
+    Input:  (B, n_cycles, d)
+    Output: (B, 3*d)
+    """
+
+    def __init__(self, late_start_cycle: int = 80, early_end_cycle: int = 20):
+        super().__init__()
+        self.late_start_cycle = int(late_start_cycle)
+        self.early_end_cycle = int(early_end_cycle)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        n_cycles = x.shape[1]
+
+        late_start_idx = min(max(self.late_start_cycle - 1, 0), n_cycles - 1)
+        early_end_idx = min(max(self.early_end_cycle, 1), n_cycles)
+
+        global_mean = x.mean(dim=1)
+        early_mean = x[:, :early_end_idx].mean(dim=1)
+        late_mean = x[:, late_start_idx:].mean(dim=1)
+        drift = late_mean - early_mean
+
+        return torch.cat([global_mean, late_mean, drift], dim=-1)
 
 
 class FiLMHead(nn.Module):
@@ -291,14 +319,25 @@ class CycleAwareBiLSTM(nn.Module):
             dropout=cfg.lstm_dropout if cfg.lstm_layers > 1 else 0.0,
         )
 
-        wafer_dim = 2 * cfg.lstm_hidden
+        base_wafer_dim = 2 * cfg.lstm_hidden
 
         if cfg.pool == "attention":
-            self.cycle_pool = AttentionPool(d_in=wafer_dim, d_hidden=cfg.attn_hidden)
+            self.cycle_pool = AttentionPool(d_in=base_wafer_dim, d_hidden=cfg.attn_hidden)
+            wafer_dim = base_wafer_dim
         elif cfg.pool == "mean":
             self.cycle_pool = None
+            wafer_dim = base_wafer_dim
+        elif cfg.pool == "mean_late_drift":
+            self.cycle_pool = MeanLateDriftPool(
+                late_start_cycle=cfg.late_start_cycle,
+                early_end_cycle=cfg.early_end_cycle,
+            )
+            wafer_dim = 3 * base_wafer_dim
         else:
-            raise ValueError(f"unknown pool={cfg.pool!r} (expected 'mean' or 'attention')")
+            raise ValueError(
+                f"unknown pool={cfg.pool!r} "
+                "expected 'mean', 'attention', or 'mean_late_drift'"
+            )
 
         # XGB feature projection (K → xgb_proj_dim).
         # Injected AFTER FiLM into the regression head, NOT into wafer_repr.
@@ -457,6 +496,8 @@ def build_cycle_aware_bilstm(params: dict[str, Any]) -> CycleAwareBiLSTM:
         use_film=bool(params.get("use_film", True)),
         pool=str(params.get("pool", "mean")),
         attn_hidden=int(params.get("attn_hidden", 64)),
+        late_start_cycle=int(params.get("late_start_cycle", 80)),
+        early_end_cycle=int(params.get("early_end_cycle", 20)),
         xgb_feat_dim=int(params.get("xgb_feat_dim", 0)),
         xgb_proj_dim=int(params.get("xgb_proj_dim", 32)),
         proc_condition_oes=str(params.get("proc_condition_oes", "none")),
