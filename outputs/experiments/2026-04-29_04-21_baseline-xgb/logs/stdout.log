@@ -1,0 +1,25 @@
+Experiment dir: outputs\experiments\2026-04-29_04-21_baseline-xgb
+Config: configs\exp_baseline_xgb.yaml
+
+[data] cache: cache\v1
+[data] feature table: 88 wafers × 328 features
+[data] measurements:  7832 samples × 11 cols
+[data] design matrix: 7832 samples × 330 features
+[data] targets: ['si_etch', 'oxide_etch']
+[data] split: splits/kfold5_wafer.npz  (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), n_folds=5)
+
+=== Target: si_etch ===
+  fold 0: rmse=0.2607  mae=0.1669  r2=0.9948  mape=0.38%  (2.3s, n_train=6230, n_val=1602)
+  fold 1: rmse=0.2304  mae=0.1364  r2=0.9959  mape=0.31%  (2.0s, n_train=6319, n_val=1513)
+  fold 2: rmse=0.2686  mae=0.1965  r2=0.9944  mape=0.45%  (2.1s, n_train=6319, n_val=1513)
+  fold 3: rmse=0.4392  mae=0.1536  r2=0.9854  mape=0.36%  (2.4s, n_train=6230, n_val=1602)
+  fold 4: rmse=0.4242  mae=0.1824  r2=0.9860  mape=0.42%  (2.3s, n_train=6230, n_val=1602)
+  AGG    rmse=0.3246±0.0885  mae=0.1672±0.0211  r2=0.9913±0.0046  mape=0.38%±0.05%
+
+=== Target: oxide_etch ===
+  fold 0: rmse=0.0511  mae=0.0304  r2=0.5648  mape=4.73%  (2.4s, n_train=6230, n_val=1602)
+  fold 1: rmse=0.0545  mae=0.0326  r2=0.4839  mape=5.34%  (2.3s, n_train=6319, n_val=1513)
+  fold 2: rmse=0.0585  mae=0.0350  r2=0.4165  mape=5.34%  (2.3s, n_train=6319, n_val=1513)
+  fold 3: rmse=0.0447  mae=0.0261  r2=0.6624  mape=3.76%  (2.2s, n_train=6230, n_val=1602)
+  fold 4: rmse=0.0489  mae=0.0297  r2=0.6175  mape=4.72%  (2.3s, n_train=6230, n_val=1602)
+  AGG    rmse=0.0515±0.0047  mae=0.0308±0.0030  r2=0.5490±0.0890  mape=4.78%±0.58%

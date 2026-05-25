@@ -1,0 +1,84 @@
+# Process-conditioned OES FiLM variant of the current best multimodal model.
+# Base: exp_dl_multimodal_singlefold.yaml (FiLM + Fourier xy + mean pool).
+# New:  per-cycle Process embedding generates FiLM (gamma, beta) that modulates
+#       the matching OES cycle embedding before OES/Process fusion.
+#
+# Hypothesis:
+#   OES emission patterns are context-dependent: the same spectral change can
+#   mean different things under different RF, pressure, gas-flow, or thermal
+#   states. Conditioning OES on Process lets the model learn this interaction
+#   directly, instead of relying on plain concatenation after independent
+#   encoders.
+#
+# Run smoke/single-fold:
+#   .venv\python.exe -m scripts.04_train_dl --config configs/exp_dl_multimodal_procfilm_singlefold.yaml
+#
+# Run full 5-fold when ready:
+#   .venv\python.exe -m scripts.04_train_dl --config configs/exp_dl_multimodal_procfilm_singlefold.yaml --limit-folds 5
+
+experiment:
+  title: "dl multimodal procfilm singlefold"
+  seed: 42
+  limit_folds: 1
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch", "si_etch"]   # oxide first — primary research target
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 3648
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 4
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    # Cross-modal conditioning:
+    #   "film": Process-conditioned OES FiLM, initialized as identity.
+    #   "gate": Process-conditioned OES gate, also initialized as identity.
+    #   "none": original plain concat baseline.
+    proc_condition_oes: "film"
+
+training:
+  epochs: 40
+  batch_size: 4
+  lr: 1.5e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 8
+  loss: "mse"
+  num_workers: 0
+  amp: false

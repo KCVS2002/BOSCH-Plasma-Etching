@@ -76,6 +76,10 @@ class CycleVMConfig:
     # wafer_repr BEFORE FiLM, enriching the shared wafer context each point sees.
     xgb_feat_dim: int = 0      # 0 = disabled (backward compat). Set to len(xgb_feat_names).
     xgb_proj_dim: int = 32     # projection dim for XGB features
+    # --- cross-modal conditioning ---
+    # "none": legacy concat; "film": Process-conditioned OES FiLM;
+    # "gate": Process-conditioned multiplicative OES gate.
+    proc_condition_oes: str = "none"
 
 
 class FourierFeatureEncoder(nn.Module):
@@ -138,6 +142,40 @@ class AttentionPool(nn.Module):
         scores = self.score(x).squeeze(-1)            # (B, n_cycles)
         weights = torch.softmax(scores, dim=-1)
         return (x * weights.unsqueeze(-1)).sum(dim=1)  # (B, d)
+
+
+class ProcessConditionedOESFiLM(nn.Module):
+    """Modulate each OES cycle embedding using the matching Process embedding.
+
+    The layer starts as an identity transform (gamma≈1, beta≈0), so enabling it
+    does not disturb the baseline representation at initialization. During
+    training it can learn that the same OES pattern should be interpreted
+    differently under different RF, pressure, gas, or thermal process states.
+    """
+
+    def __init__(self, proc_dim: int, oes_dim: int):
+        super().__init__()
+        self.modulator = nn.Linear(proc_dim, 2 * oes_dim)
+        nn.init.zeros_(self.modulator.weight)
+        nn.init.zeros_(self.modulator.bias)
+
+    def forward(self, oes_emb: torch.Tensor, proc_emb: torch.Tensor) -> torch.Tensor:
+        d_gamma, beta = self.modulator(proc_emb).chunk(2, dim=-1)
+        return (1.0 + d_gamma) * oes_emb + beta
+
+
+class ProcessConditionedOESGate(nn.Module):
+    """Gate OES cycle embeddings with a Process-derived multiplicative mask."""
+
+    def __init__(self, proc_dim: int, oes_dim: int):
+        super().__init__()
+        self.gate = nn.Linear(proc_dim, oes_dim)
+        nn.init.zeros_(self.gate.weight)
+        nn.init.zeros_(self.gate.bias)
+
+    def forward(self, oes_emb: torch.Tensor, proc_emb: torch.Tensor) -> torch.Tensor:
+        gate = 2.0 * torch.sigmoid(self.gate(proc_emb))
+        return gate * oes_emb
 
 
 class FiLMHead(nn.Module):
@@ -204,16 +242,39 @@ class CycleAwareBiLSTM(nn.Module):
             raise ValueError("at least one of oes_encoder/proc_encoder must be set")
 
         emb_dim_total = 0
+        oes_dim = 0
+        proc_dim = 0
         if cfg.oes_encoder is not None:
             self.oes_enc = CycleSeriesEncoder(CycleEncoderConfig(**cfg.oes_encoder))
-            emb_dim_total += int(cfg.oes_encoder["out_dim"])
+            oes_dim = int(cfg.oes_encoder["out_dim"])
+            emb_dim_total += oes_dim
         else:
             self.oes_enc = None
         if cfg.proc_encoder is not None:
             self.proc_enc = CycleSeriesEncoder(CycleEncoderConfig(**cfg.proc_encoder))
-            emb_dim_total += int(cfg.proc_encoder["out_dim"])
+            proc_dim = int(cfg.proc_encoder["out_dim"])
+            emb_dim_total += proc_dim
         else:
             self.proc_enc = None
+
+        cond = cfg.proc_condition_oes.lower()
+        if cond != "none" and (self.oes_enc is None or self.proc_enc is None):
+            raise ValueError("proc_condition_oes requires both OES and Process encoders")
+        if cond == "film":
+            self.proc_oes_conditioner = ProcessConditionedOESFiLM(
+                proc_dim=proc_dim, oes_dim=oes_dim,
+            )
+        elif cond == "gate":
+            self.proc_oes_conditioner = ProcessConditionedOESGate(
+                proc_dim=proc_dim, oes_dim=oes_dim,
+            )
+        elif cond == "none":
+            self.proc_oes_conditioner = None
+        else:
+            raise ValueError(
+                f"unknown proc_condition_oes={cfg.proc_condition_oes!r} "
+                "(expected 'none', 'film', or 'gate')"
+            )
 
         self.fusion = nn.Sequential(
             nn.Linear(emb_dim_total, cfg.cycle_fusion_dim),
@@ -301,15 +362,22 @@ class CycleAwareBiLSTM(nn.Module):
         proc: torch.Tensor | None,
     ) -> torch.Tensor:
         """Return cycle-level embeddings (B, n_cycles, cycle_fusion_dim)."""
-        embs: list[torch.Tensor] = []
+        oes_emb: torch.Tensor | None = None
+        proc_emb: torch.Tensor | None = None
         if self.oes_enc is not None:
             if oes is None:
                 raise ValueError("model expects OES input")
-            embs.append(self.oes_enc(oes))
+            oes_emb = self.oes_enc(oes)
         if self.proc_enc is not None:
             if proc is None:
                 raise ValueError("model expects Process input")
-            embs.append(self.proc_enc(proc))
+            proc_emb = self.proc_enc(proc)
+
+        if self.proc_oes_conditioner is not None:
+            assert oes_emb is not None and proc_emb is not None
+            oes_emb = self.proc_oes_conditioner(oes_emb, proc_emb)
+
+        embs = [emb for emb in (oes_emb, proc_emb) if emb is not None]
         cyc = torch.cat(embs, dim=-1) if len(embs) > 1 else embs[0]
         return self.fusion(cyc)
 
@@ -391,5 +459,6 @@ def build_cycle_aware_bilstm(params: dict[str, Any]) -> CycleAwareBiLSTM:
         attn_hidden=int(params.get("attn_hidden", 64)),
         xgb_feat_dim=int(params.get("xgb_feat_dim", 0)),
         xgb_proj_dim=int(params.get("xgb_proj_dim", 32)),
+        proc_condition_oes=str(params.get("proc_condition_oes", "none")),
     )
     return CycleAwareBiLSTM(cfg)
