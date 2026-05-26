@@ -1,0 +1,101 @@
+# Wafer-mean auxiliary loss — direct pressure on encoder to preserve wafer mean.
+#
+# Motivation:
+#   Multi-stat pool (2026-05-27_02-31) failed to fix fold 4 (R²=0.33 → 0.33).
+#   Per-wafer predictions showed 11 high-mode wafers all giving pred=0.677 to
+#   4 decimal places — identical wafer_repr → pool change can't help when
+#   the upstream encoder collapses these wafers to the same point in
+#   embedding space.
+#
+#   Conclusion: bottleneck is upstream of pool. wafer_mean_corr stuck at 0.6
+#   means the encoder is losing wafer-level mean information. Per-point MSE
+#   loss is too forgiving — a wafer can be off by +0.05 on every point and
+#   still contribute small per-point loss if the spatial pattern is roughly
+#   right.
+#
+# Change vs exp_dl_multimodal_oes_topk256_longrun_5fold.yaml:
+#   - aux_wafer_mean: true              # enables Linear(wafer_dim → 1) aux head
+#   - aux_wafer_loss_weight: 0.3        # combined = point_loss + 0.3 * aux_mse
+#   - pool: "mean" (revert from multi_stat — pool wasn't the issue)
+#
+# Aux head bypasses FiLM/xy: gradient flows directly into wafer_repr, forcing
+# encoder + pool to make wafer mean linearly predictable. Targets between-wafer
+# discriminability (wafer_mean_corr) without changing the per-point pipeline.
+#
+# Baseline to beat (topk256 longrun mean-pool):
+#   fold 0: 0.71  fold 1: 0.70  fold 2: 0.50  fold 3: 0.75  fold 4: 0.32
+#   aggregate: R² 0.596 ± 0.163, wafer_mean_corr fold4 ≈ 0.62
+# Success criteria:
+#   fold 4 wafer_mean_corr 0.62 → 0.75+ (encoder preserves mean info)
+#   fold 4 R² 0.32 → 0.50+ (matches XGB's fold 4)
+#   aggregate R² ≥ 0.65 (no regression on folds 0-3)
+
+experiment:
+  title: "dl multimodal oes aux wafer mean 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    aux_wafer_mean: true
+    aux_wafer_loss_weight: 0.3
+
+training:
+  epochs: 80
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 15
+  loss: "mse"
+  num_workers: 0
+  amp: false

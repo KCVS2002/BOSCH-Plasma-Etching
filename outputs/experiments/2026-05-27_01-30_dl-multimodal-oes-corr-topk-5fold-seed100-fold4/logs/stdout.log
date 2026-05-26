@@ -1,0 +1,52 @@
+Experiment dir: outputs\experiments\2026-05-27_01-30_dl-multimodal-oes-corr-topk-5fold-seed100-fold4
+Config: configs\exp_dl_multimodal_oes_corr_topk_5fold.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), running folds [4] of 5)
+Targets: ['oxide_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 157.9s  (discover=0.2 load=157.7)
+[setup] proc channels kept: 31
+[setup] XGB injection features: 0 (disabled)
+[setup] normalisation deferred to per-fold (no val leakage)
+
+=== Target: oxide_etch ===
+  -- fold 4 --
+    [seed] reset RNG for target/fold: 104
+    [fold-norm] fit on 70 train wafers (fold 4)...
+    [fold-norm] done (87.3s)
+    target oxide_etch stats: mean=0.6594 std=0.0768
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=70
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.584, min selected |corr|=0.332, 63.0s)
+    ep   0 (46.3s): train_loss=0.9845 train_rmse=0.0762 val_rmse=0.0957 val_r2=-0.4623 val_mape=12.69%
+    ep   1 (3.3s): train_loss=0.9893 train_rmse=0.0764 val_rmse=0.0773 val_r2=0.0444 val_mape=9.58%
+    ep   2 (2.8s): train_loss=0.9141 train_rmse=0.0734 val_rmse=0.0951 val_r2=-0.4443 val_mape=12.50%
+    ep   3 (2.8s): train_loss=0.8711 train_rmse=0.0717 val_rmse=0.0718 val_r2=0.1761 val_mape=8.57%
+    ep   4 (2.9s): train_loss=0.9660 train_rmse=0.0755 val_rmse=0.0731 val_r2=0.1462 val_mape=9.06%
+    ep   5 (2.8s): train_loss=0.8306 train_rmse=0.0700 val_rmse=0.0755 val_r2=0.0888 val_mape=9.26%
+    ep   6 (2.8s): train_loss=0.8475 train_rmse=0.0707 val_rmse=0.0862 val_r2=-0.1877 val_mape=8.46%
+    ep   7 (2.8s): train_loss=0.7900 train_rmse=0.0682 val_rmse=0.0812 val_r2=-0.0521 val_mape=9.50%
+    ep   8 (2.8s): train_loss=0.7014 train_rmse=0.0643 val_rmse=0.0736 val_r2=0.1350 val_mape=8.51%
+    ep   9 (2.8s): train_loss=0.6571 train_rmse=0.0622 val_rmse=0.0685 val_r2=0.2504 val_mape=6.19%
+    ep  10 (2.8s): train_loss=0.6888 train_rmse=0.0637 val_rmse=0.0854 val_r2=-0.1651 val_mape=7.47%
+    ep  11 (2.8s): train_loss=0.7299 train_rmse=0.0656 val_rmse=0.0782 val_r2=0.0230 val_mape=8.86%
+    ep  12 (2.8s): train_loss=0.8886 train_rmse=0.0724 val_rmse=0.0721 val_r2=0.1704 val_mape=8.40%
+    ep  13 (2.8s): train_loss=0.8051 train_rmse=0.0689 val_rmse=0.0666 val_r2=0.2916 val_mape=7.42%
+    ep  14 (2.8s): train_loss=0.6826 train_rmse=0.0634 val_rmse=0.0652 val_r2=0.3207 val_mape=6.90%
+    ep  15 (2.8s): train_loss=0.6991 train_rmse=0.0642 val_rmse=0.0761 val_r2=0.0744 val_mape=8.88%
+    ep  16 (2.8s): train_loss=0.7421 train_rmse=0.0661 val_rmse=0.0740 val_r2=0.1250 val_mape=7.93%
+    ep  17 (2.8s): train_loss=0.5659 train_rmse=0.0578 val_rmse=0.0706 val_r2=0.2037 val_mape=6.12%
+    ep  18 (2.8s): train_loss=0.6000 train_rmse=0.0595 val_rmse=0.0646 val_r2=0.3328 val_mape=5.28%
+    ep  19 (2.8s): train_loss=0.6043 train_rmse=0.0597 val_rmse=0.0655 val_r2=0.3150 val_mape=5.64%
+    ep  20 (2.8s): train_loss=0.7739 train_rmse=0.0675 val_rmse=0.0618 val_r2=0.3896 val_mape=6.36%
+    ep  21 (2.8s): train_loss=0.6582 train_rmse=0.0623 val_rmse=0.0659 val_r2=0.3055 val_mape=6.95%
+    ep  22 (2.8s): train_loss=0.6265 train_rmse=0.0608 val_rmse=0.0642 val_r2=0.3413 val_mape=5.73%
+    ep  23 (2.8s): train_loss=0.6267 train_rmse=0.0608 val_rmse=0.0660 val_r2=0.3032 val_mape=6.76%
+    ep  24 (2.8s): train_loss=0.6315 train_rmse=0.0610 val_rmse=0.0663 val_r2=0.2980 val_mape=4.99%
+    ep  25 (2.8s): train_loss=0.6656 train_rmse=0.0626 val_rmse=0.0631 val_r2=0.3639 val_mape=5.88%
+    ep  26 (2.8s): train_loss=0.5504 train_rmse=0.0570 val_rmse=0.0655 val_r2=0.3149 val_mape=5.47%
+    ep  27 (2.8s): train_loss=0.5739 train_rmse=0.0582 val_rmse=0.0692 val_r2=0.2350 val_mape=6.74%
+    ep  28 (2.8s): train_loss=0.5123 train_rmse=0.0550 val_rmse=0.0659 val_r2=0.3059 val_mape=5.43%
+    early stop @ epoch 28 (best 20, val_rmse=0.0618)
+    final: rmse=0.0618  mae=0.0401  r2=0.3896  mape=6.36%  (278.2s, best_ep=20)
+  AGG    rmse=0.0618±0.0000  r2=0.3896±0.0000

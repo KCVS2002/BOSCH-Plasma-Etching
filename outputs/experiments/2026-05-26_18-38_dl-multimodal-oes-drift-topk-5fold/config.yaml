@@ -1,0 +1,87 @@
+# Method 2 variant — OES wavelength selection via drift correlation.
+#
+# Difference from exp_dl_multimodal_oes_corr_topk_5fold.yaml:
+#   stat: "drift" instead of "late_mean"
+#
+# drift = late_mean(cycles 80~100) - early_mean(cycles 1~20) per wavelength.
+# Selects wavelengths whose *change* across the process is most correlated
+# with oxide, rather than their absolute late-cycle intensity.
+#
+# Motivation: oxide_etch is a cumulative result of the etching process.
+# A wavelength that rises (or falls) consistently as the process progresses
+# and that rise/fall tracks oxide output should be more informative than
+# a wavelength that stays bright throughout.
+# This is also consistent with SHAP top features being slope/drift features
+# (proc_Heater2Temp_slope, proc_Pressure_drift) rather than late means.
+#
+# Baseline to compare against:
+#   exp_dl_multimodal_oes_corr_topk_5fold (late_mean, top_k=256):
+#   RMSE 0.0485±0.0095, R² 0.592±0.152
+
+experiment:
+  title: "dl multimodal oes drift topk 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "drift"          # late_mean(80~100) - early_mean(1~20)
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+
+training:
+  epochs: 40
+  batch_size: 4
+  lr: 1.5e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 8
+  loss: "mse"
+  num_workers: 0
+  amp: false

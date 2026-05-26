@@ -1,7 +1,33 @@
 ---
 name: BOSCH Plasma Etching Project Progress
-description: Phase-by-phase progress log — current state as of 2026-05-08 (mid-term presentation done, 5-fold extension pending)
+description: Phase-by-phase progress log — current state as of 2026-05-27 (fold 4 collapse root cause confirmed as encoder bottleneck, aux-loss fix pending)
 type: project
+---
+
+## 한눈에 보기 (2026-05-27 업데이트)
+
+**fold 4 진단 라운드 완료. encoder representational 문제로 확정. wafer-mean aux loss 구현 끝, 실행 대기.**
+
+- **fold 4는 데이터적으로 어렵지 않음** (XGB R²=0.62, 동일 split). DL 고유의 표현력 한계 문제.
+- **fold 4 seed sweep (5 seeds, fold 4 only):** [outputs/experiments/2026-05-27_00-58~01-30_dl-multimodal-oes-corr-topk-5fold-seed{0,1,2,42,100}-fold4/](outputs/experiments/)
+  - 모든 seed R² = 0.30~0.41 좁은 구간, std=0.046
+  - **residual 상관행렬 평균 off-diagonal = 0.94** → 5 seed의 error가 거의 동일
+  - **5-seed simple mean ensemble**: R² 0.39 (최선 single 0.41보다 *나쁨*) → ensemble 우회로 차단
+  - **결론: optimization-induced가 아니라 structural encoder collapse**
+- **OES wavelength selection 인프라 구현됨** ([src/features/oes_selection.py](../src/features/oes_selection.py)): per-fold train-only correlation 기반 top-k. `stat ∈ {mean, late_mean, drift}`. drift는 fold 4 R²=0.165으로 더 나빠짐, late_mean이 안정. top_k=256/128 둘 다 fold 4는 비슷 (~0.38).
+- **multi-stat pool ([mean, std, max, slope]) 시도 → 실패**: [outputs/experiments/2026-05-27_02-31_dl-multimodal-oes-multistat-pool-5fold/](outputs/experiments/) — fold 4 R²=0.33 (불변), aggregate 0.572 (오히려 -0.024). 11 wafer가 4자리까지 동일 pred=0.677 → **wafer_repr 자체가 동일, pool은 병목 아님**.
+- **wafer-mean auxiliary loss 구현 완료** ([src/models/bilstm_vm.py](../src/models/bilstm_vm.py), [scripts/04_train_dl.py](../scripts/04_train_dl.py)): `aux_wafer_mean: true`, `aux_wafer_loss_weight: 0.3`. wafer_repr → Linear(d, 1)로 wafer mean 직접 예측, combined loss로 encoder에 mean 보존 압력. **실행 대기 중**: [configs/exp_dl_multimodal_oes_aux_wafer_mean_5fold.yaml](../configs/exp_dl_multimodal_oes_aux_wafer_mean_5fold.yaml)
+
+**Why fold 4 collapses (2026-05-27 확정 진단):**
+- Bimodal 타깃 분포 (low 0.57-0.61 / high 0.65-0.71, within-wafer std도 다름) → 모델이 두 클러스터 binary 분류 + 클러스터 평균 출력하는 local minimum에 안정적으로 빠짐
+- fold 4 val 18 wafer 중 11개 high-mode가 모두 동일 wafer_repr → 동일 출력 (~0.6770)
+- 2024-07-11_01, _02 (extreme high oxide지만 July OES 시그너처) → low-mode로 오분류
+- proc-only DL fold 4 R²=0.134이나 XGB proc-stats는 0.62 — **DL의 process encoder가 XGB의 long-horizon stats (mean/std/slope across 100 cycles)를 추출 못함**
+
+**How to apply now:** 다음 agent는 fold 4 개선 시도 시 (1) optimization 변경 (lr/epoch/seed) 절대 시도 금지, (2) ensemble도 무효, (3) 다음 우선순위는 wafer-mean aux loss 실험 결과 확인 → 실패하면 cycle-aggregated stats를 head에 직접 주입 (option B) 또는 XGB feature 주입 또는 residual hybrid.
+
+상세 실행 로그는 [outputs/experiments/2026-05-27_*/](outputs/experiments/) 폴더들.
+
 ---
 
 ## 한눈에 보기 (2026-05-26 업데이트)

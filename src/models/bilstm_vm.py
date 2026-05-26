@@ -68,7 +68,7 @@ class CycleVMConfig:
     xy_enc_dim: int = 64       # output dim of xy encoder MLP
     use_film: bool = True      # FiLM-modulate wafer_repr by xy_enc per point
     # --- cycle aggregation ---
-    pool: str = "mean"         # "mean", "attention", or "mean_late_drift"
+    pool: str = "mean"         # "mean", "attention", "mean_late_drift", or "multi_stat"
     attn_hidden: int = 64      # hidden dim of attention scoring MLP
     late_start_cycle: int = 80 # 1-based: late window starts at cycle 80
     early_end_cycle: int = 20  # 1-based: early window uses cycles 1~20
@@ -82,6 +82,16 @@ class CycleVMConfig:
     # "none": legacy concat; "film": Process-conditioned OES FiLM;
     # "gate": Process-conditioned multiplicative OES gate.
     proc_condition_oes: str = "none"
+    # --- auxiliary wafer-mean head ---
+    # When True, a small Linear(wafer_dim → 1) head predicts the wafer-level
+    # target mean directly from wafer_repr (bypasses FiLM/xy). Training adds
+    # `aux_wafer_loss_weight × MSE(wafer_mean_pred, target.mean(dim=1))` to
+    # the per-point loss. Forces the encoder/pool to preserve wafer-level
+    # mean information that point-wise loss is too forgiving about (a fold
+    # with consistent +0.05 bias still has small per-point loss if spatial
+    # pattern is roughly right).
+    aux_wafer_mean: bool = False
+    aux_wafer_loss_weight: float = 0.3
 
 
 class FourierFeatureEncoder(nn.Module):
@@ -178,6 +188,48 @@ class ProcessConditionedOESGate(nn.Module):
     def forward(self, oes_emb: torch.Tensor, proc_emb: torch.Tensor) -> torch.Tensor:
         gate = 2.0 * torch.sigmoid(self.gate(proc_emb))
         return gate * oes_emb
+
+
+class MultiStatPool(nn.Module):
+    """Concat [mean, std, max, slope] across cycles, project back to d.
+
+    Why: mean-pool keeps only the average of cycle embeddings, discarding
+    within-trajectory variability. XGBoost on hand-crafted process stats
+    (mean/std/slope/range) gets fold 4 R²=0.62 while DL with mean-pool
+    collapses to R²=0.32. Multi-stat pool exposes the same statistics to
+    the head so the encoder no longer has to encode them implicitly inside
+    a single averaged vector.
+
+    Slope is closed-form linear regression of each channel against cycle
+    index (centred), matching XGB's per-channel slope feature.
+
+    Projection is initialised so that output ≡ mean at epoch 0 (identity on
+    mean rows, zero on std/max/slope rows). Behaviour starts identical to
+    mean-pool and the extra statistics are gradually mixed in by training.
+    """
+
+    def __init__(self, d_in: int):
+        super().__init__()
+        self.d_in = d_in
+        self.n_stats = 4
+        self.proj = nn.Linear(self.n_stats * d_in, d_in)
+        with torch.no_grad():
+            self.proj.weight.zero_()
+            self.proj.weight[:, :d_in] = torch.eye(d_in)
+            self.proj.bias.zero_()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, n_cycles, d)
+        n_cycles = x.shape[1]
+        mean = x.mean(dim=1)
+        std = x.std(dim=1, unbiased=False)
+        maxv = x.amax(dim=1)
+        t = torch.arange(n_cycles, device=x.device, dtype=x.dtype)
+        tc = t - t.mean()
+        denom = (tc * tc).sum().clamp(min=1e-8)
+        slope = (x * tc.view(1, -1, 1)).sum(dim=1) / denom
+        cat = torch.cat([mean, std, maxv, slope], dim=-1)
+        return self.proj(cat)
 
 
 class MeanLateDriftPool(nn.Module):
@@ -333,10 +385,13 @@ class CycleAwareBiLSTM(nn.Module):
                 early_end_cycle=cfg.early_end_cycle,
             )
             wafer_dim = 3 * base_wafer_dim
+        elif cfg.pool == "multi_stat":
+            self.cycle_pool = MultiStatPool(d_in=base_wafer_dim)
+            wafer_dim = base_wafer_dim
         else:
             raise ValueError(
                 f"unknown pool={cfg.pool!r} "
-                "expected 'mean', 'attention', or 'mean_late_drift'"
+                "expected 'mean', 'attention', 'mean_late_drift', or 'multi_stat'"
             )
 
         # XGB feature projection (K → xgb_proj_dim).
@@ -374,6 +429,14 @@ class CycleAwareBiLSTM(nn.Module):
         else:
             self.xy_encoder = None
             xy_dim = 0
+
+        # Auxiliary wafer-mean head: small Linear from wafer_repr → wafer mean.
+        # Bypasses FiLM/xy so the loss flows directly into wafer_repr and the
+        # encoder/pool that produced it. Disabled by default (aux_head is None).
+        if cfg.aux_wafer_mean:
+            self.aux_head = nn.Linear(wafer_dim, 1)
+        else:
+            self.aux_head = None
 
         self.use_film = bool(cfg.use_xy and cfg.use_film)
         if self.use_film:
@@ -426,7 +489,8 @@ class CycleAwareBiLSTM(nn.Module):
         proc: torch.Tensor | None = None,
         xy: torch.Tensor | None = None,
         xgb_feat: torch.Tensor | None = None,
-    ) -> torch.Tensor:
+        return_aux: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor | None]:
         """Wafer-level forward.
 
         Shapes:
@@ -435,7 +499,10 @@ class CycleAwareBiLSTM(nn.Module):
             xy:       (B, n_points, 2)
             xgb_feat: (B, K) wafer-level XGB features — required if xgb_feat_dim > 0
         Returns:
-            (B, n_points)
+            per_point predictions (B, n_points) by default.
+            If return_aux=True, returns (per_point, wafer_mean_pred) where
+            wafer_mean_pred is (B,) from the aux head, or None if the aux
+            head is disabled.
         """
         cycles = self.encode_cycles(oes, proc)               # (B, 100, d)
         seq, _ = self.lstm(cycles)                            # (B, 100, 2h)
@@ -443,6 +510,10 @@ class CycleAwareBiLSTM(nn.Module):
             wafer = self.cycle_pool(seq)                      # (B, 2h) attention
         else:
             wafer = seq.mean(dim=1)                           # (B, 2h) mean
+
+        aux_pred = (
+            self.aux_head(wafer).squeeze(-1) if self.aux_head is not None else None
+        )
 
         # Project XGB features for head injection (does NOT modify wafer_repr)
         if self.xgb_proj is not None:
@@ -455,7 +526,8 @@ class CycleAwareBiLSTM(nn.Module):
         if not self.cfg.use_xy:
             # No xy at all — return one prediction per wafer
             assert self.head is not None
-            return self.head(wafer).squeeze(-1)               # (B,)
+            per_pt = self.head(wafer).squeeze(-1)             # (B,)
+            return (per_pt, aux_pred) if return_aux else per_pt
 
         if xy is None:
             raise ValueError("model expects xy input (use_xy=True)")
@@ -466,7 +538,8 @@ class CycleAwareBiLSTM(nn.Module):
 
         if self.use_film:
             assert self.film_head is not None
-            return self.film_head(wafer, xy_enc, xgb_enc=xgb_enc)   # (B, n_pts)
+            per_pt = self.film_head(wafer, xy_enc, xgb_enc=xgb_enc)   # (B, n_pts)
+            return (per_pt, aux_pred) if return_aux else per_pt
 
         # Legacy concat path (non-FiLM)
         n_pts = xy_enc.shape[1]
@@ -476,7 +549,8 @@ class CycleAwareBiLSTM(nn.Module):
             parts.append(xgb_enc.unsqueeze(1).expand(-1, n_pts, -1))
         full = torch.cat(parts, dim=-1)
         assert self.head is not None
-        return self.head(full).squeeze(-1)
+        per_pt = self.head(full).squeeze(-1)
+        return (per_pt, aux_pred) if return_aux else per_pt
 
 
 def build_cycle_aware_bilstm(params: dict[str, Any]) -> CycleAwareBiLSTM:
@@ -501,5 +575,7 @@ def build_cycle_aware_bilstm(params: dict[str, Any]) -> CycleAwareBiLSTM:
         xgb_feat_dim=int(params.get("xgb_feat_dim", 0)),
         xgb_proj_dim=int(params.get("xgb_proj_dim", 32)),
         proc_condition_oes=str(params.get("proc_condition_oes", "none")),
+        aux_wafer_mean=bool(params.get("aux_wafer_mean", False)),
+        aux_wafer_loss_weight=float(params.get("aux_wafer_loss_weight", 0.3)),
     )
     return CycleAwareBiLSTM(cfg)

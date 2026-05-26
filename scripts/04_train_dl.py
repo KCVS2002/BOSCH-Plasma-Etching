@@ -75,12 +75,13 @@ def _move_batch(batch: dict, device: torch.device) -> dict:
     return {k: v.to(device, non_blocking=True) for k, v in batch.items()}
 
 
-def _forward(model: nn.Module, batch: dict) -> torch.Tensor:
+def _forward(model: nn.Module, batch: dict, return_aux: bool = False):
     return model(
         oes=batch.get("oes"),
         proc=batch.get("proc"),
         xy=batch.get("xy"),
         xgb_feat=batch.get("xgb_feat"),
+        return_aux=return_aux,
     )
 
 
@@ -234,6 +235,11 @@ def train_one_fold(
     scaler = torch.cuda.amp.GradScaler() if use_amp else None
     patience = int(cfg["training"].get("early_stop_patience", 12))
 
+    has_aux = getattr(model, "aux_head", None) is not None
+    aux_weight = float(model.cfg.aux_wafer_loss_weight) if has_aux else 0.0
+    if has_aux:
+        log(f"    [aux] wafer-mean aux head ENABLED, weight={aux_weight}")
+
     best_val_rmse = float("inf")
     best_state: dict | None = None
     best_epoch = -1
@@ -258,18 +264,34 @@ def train_one_fold(
             optim.zero_grad()
             if use_amp:
                 with torch.cuda.amp.autocast():
-                    pred = _forward(model, batch)
-                    loss = loss_fn(pred, batch["target"])
+                    if has_aux:
+                        pred, aux_pred = _forward(model, batch, return_aux=True)
+                        point_loss = loss_fn(pred, batch["target"])
+                        aux_loss = loss_fn(aux_pred, batch["target"].mean(dim=1))
+                        loss = point_loss + aux_weight * aux_loss
+                    else:
+                        pred = _forward(model, batch)
+                        loss = loss_fn(pred, batch["target"])
                 scaler.scale(loss).backward()
                 scaler.step(optim)
                 scaler.update()
             else:
-                pred = _forward(model, batch)
-                loss = loss_fn(pred, batch["target"])
+                if has_aux:
+                    pred, aux_pred = _forward(model, batch, return_aux=True)
+                    point_loss = loss_fn(pred, batch["target"])
+                    aux_loss = loss_fn(aux_pred, batch["target"].mean(dim=1))
+                    loss = point_loss + aux_weight * aux_loss
+                else:
+                    pred = _forward(model, batch)
+                    loss = loss_fn(pred, batch["target"])
                 loss.backward()
                 optim.step()
             bs_actual = batch["target"].shape[0]
-            train_loss_sum += float(loss.item()) * bs_actual
+            # Log the per-point loss only (matches baseline `train_loss` semantics
+            # and keeps `train_rmse` conversion below valid). Aux contribution is
+            # already exerting its pressure through the combined backprop.
+            log_loss_val = point_loss.item() if has_aux else loss.item()
+            train_loss_sum += float(log_loss_val) * bs_actual
             train_n += bs_actual
             train_bar.set_postfix({"loss": f"{loss.item():.4f}"})
         train_loss = train_loss_sum / max(train_n, 1)
@@ -416,9 +438,17 @@ def main() -> None:
                         help="override config limit_folds (e.g. --limit-folds 5 for full CV)")
     parser.add_argument("--folds", type=str, default=None,
                         help="comma-separated fold ids to run (e.g. 4 or 2,4); overrides --limit-folds")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="override config experiment.seed (used for seed-sweep diagnostics)")
+    parser.add_argument("--slug-suffix", type=str, default=None,
+                        help="append a suffix to the experiment title slug (e.g. seed42)")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    if args.seed is not None:
+        cfg["experiment"]["seed"] = int(args.seed)
+    if args.slug_suffix:
+        cfg["experiment"]["title"] = f"{cfg['experiment']['title']} {args.slug_suffix}"
     seed = int(cfg["experiment"]["seed"])
     set_seed(seed)
 

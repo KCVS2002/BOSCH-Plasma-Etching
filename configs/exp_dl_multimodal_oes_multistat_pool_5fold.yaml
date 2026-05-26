@@ -1,0 +1,87 @@
+# Multi-stat pool — replace mean-pool with [mean, std, max, slope] concat + linear projection.
+#
+# Motivation:
+#   Fold 4 seed-sweep (5 seeds) → R²=0.30-0.41, residual_corr=0.94 across seeds.
+#   Not optimization-induced. wafer_mean_corr saturates at ~0.6 regardless of init.
+#   pred_std/true_std ≈ 0.5 (mode collapse: model squashes both extremes toward mean).
+#   XGBoost on same fold 4 with hand-crafted process stats (mean/std/slope/range)
+#   gets R²=0.62. Conclusion: information bottleneck is at the cycle pool —
+#   mean-pool keeps only the average, throws away std/peak/slope that XGB uses.
+#
+# Change vs exp_dl_multimodal_oes_topk256_longrun_5fold.yaml:
+#   pool: "mean" → "multi_stat"
+#
+# Init equivalence (verified): MultiStatPool projection is init'd so output ≡ mean
+# at epoch 0. Training gradually mixes std/max/slope contributions.
+#
+# Baseline to beat (topk256 longrun mean-pool):
+#   fold 0: 0.71  fold 1: 0.70  fold 2: 0.50  fold 3: 0.75  fold 4: 0.32
+#   aggregate: R² 0.596 ± 0.163
+
+experiment:
+  title: "dl multimodal oes multistat pool 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "multi_stat"
+
+training:
+  epochs: 80
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 15
+  loss: "mse"
+  num_workers: 0
+  amp: false

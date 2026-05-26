@@ -61,3 +61,41 @@ Process 가 oxide 신호의 대부분을 가지지만, OES 와 합치면 추가 
 - 모든 현재 결과는 fold 0 single-fold. 5-fold 평균이 single-fold 보다 나빠질 가능성 있음 (XGB 의 si fold 3,4 처럼).
 - DL 5-fold 1회 ≈ 4시간 × 2 target × 5 fold = 40시간 — GPU 시간 큼. 가장 중요한 실험 (multimodal best) 부터.
 - 5-fold 확장 시 종료 기준 2번 (fold std/mean ≤ 10%) 검증 필수. 미달 시 Phase 5 (seed ensemble) 발동.
+
+## 7. OES wavelength selection: top-k=256, stat=late_mean 가 정답 (2026-05-27 확정)
+
+**Why:**
+- 원본 3648 채널 그대로 학습 시 fold 4 R²=0.149. wavelength reduction 후 0.376까지 회복.
+- top_k=256과 128 결과 동일 (~0.376) → 더 줄여도 무의미.
+- `stat=drift` (late_mean - early_mean) 는 late_mean 보다 모든 fold 악화 — 88 wafer × ~70 train 에서 차분은 노이즈 증폭.
+
+**How to apply:**
+- 새 multimodal 실험은 `data.oes_band_selection: {method: correlation, top_k: 256, stat: late_mean, late_start_cycle: 80}` 로 시작.
+- top_k=128 도 backup으로 사용 가능 (성능 거의 동일, 메모리 절감).
+- drift 는 ablation 비교군으로만 (논문에 "시도했고 실패" 보고).
+
+## 8. fold 4 collapse: optimization 변경으로는 해결 불가 (2026-05-27 확정)
+
+**Why:**
+- 5-seed sweep on fold 4 (config: topk256 corr): R²=0.30~0.41, std=0.046.
+- 5 seed의 잔차 상관 평균 off-diagonal = **0.94**. 다른 init이 같은 wafer에서 같은 방향으로 틀림.
+- 5-seed simple mean ensemble R²=0.39 (best single 0.41보다 *나쁨*).
+- lr 1.5e-3 → 5e-4, epochs 40 → 80, patience 8 → 15 다 시도 — fold 4 그대로 0.32.
+- **결론**: optimization-induced local minima가 아니라 **encoder representational ceiling**.
+
+**How to apply:**
+- 다음 agent는 fold 4 개선 시도 시 **다음 방법 절대 시도 금지**: (1) lr/epoch/scheduler 변경, (2) seed 변경, (3) seed ensemble, (4) 더 강한 정규화 (dropout/wd).
+- 본질적 후보: (A) wafer-mean aux loss, (B) cycle-aggregated stats를 head에 직접 주입, (C) residual hybrid (XGB base + DL residual), (D) XGB feature 주입.
+- 우선순위는 진단을 직접 검증할 수 있는 A 부터.
+
+## 9. Pool 변경은 fold 4를 못 고친다 (2026-05-27 확정)
+
+**Why:**
+- multi-stat pool ([mean, std, max, slope] concat + projection): fold 4 R²=0.33 → 0.33 (불변). aggregate 오히려 -0.024.
+- 11개 high-mode wafer가 baseline과 multi-stat 모두에서 동일 출력 (~0.677) — wafer_repr 자체가 동일.
+- mean_late_drift pool: fold 4 0.149 → 0.147 (불변). attention pool: 더 나쁨.
+- **결론**: pool 변경으로는 encoder가 같은 입력에 같은 출력을 내는 collapse를 못 깬다.
+
+**How to apply:**
+- `pool: "mean"` 유지. 변경 시 fold 0/1/3 회귀 위험만 있고 fold 4 이득 없음.
+- 본질적 해결책은 pool 상류 (encoder, loss, 또는 feature) 에서 찾아야 함.
