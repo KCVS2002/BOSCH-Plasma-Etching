@@ -1,47 +1,66 @@
 ---
 name: Key Experiment References
-description: Pointers to the canonical experiment folders — which one is the "best", which are ablations, which to compare against
-type: reference
+description: 실험 폴더 라벨링 — best model, ablations, diagnostics. 2026-05-27 기준 aux-loss가 best, LOO-Lot 검증 완료.
+metadata:
+  type: reference
 ---
 
-`outputs/experiments/` 에 14개 폴더가 시간순으로 쌓여 있음. 다른 agent 가 "어느 게 최신/최고인지" 헷갈리지 않도록 라벨링.
+## 현재 Best Model
 
-## 인용해야 할 canonical 실험 (논문/발표 결과의 출처)
+| 라벨 | 폴더 | 성능 |
+|---|---|---|
+| **DL aux-loss 5-fold ★ (current best)** | `2026-05-27_04-16_dl-multimodal-oes-aux-wafer-mean-5fold` | oxide R² 0.621±0.138, RMSE 0.0468±0.009 |
+
+## Canonical 실험 (논문/발표 인용 대상)
 
 | 라벨 | 폴더 | 용도 |
 |---|---|---|
-| **XGB baseline (Phase 2 main)** | `outputs/experiments/2026-04-30_15-32_baseline-xgb/` | 모든 비교의 기준선. 5-fold. SHAP figure 포함. fold 4 R²=0.62. |
-| **DL multimodal best (single-fold)** | `outputs/experiments/2026-05-01_00-56_dl-multimodal-singlefold/` | Phase 3 single-fold main. FiLM+Fourier+mean pool. cycle_attribution figure 포함. |
-| **DL multimodal 5-fold baseline (no wavelength sel)** | `outputs/experiments/2026-05-21_02-09_dl-multimodal-5fold/` | 첫 5-fold 확장. fold 4 R²=0.149 (collapse 최초 발견). |
-| **DL OES top-k=256 corr 5-fold ★** | `outputs/experiments/2026-05-26_02-18_dl-multimodal-oes-corr-topk-5fold/` | OES wavelength selection 첫 성공. aggregate R² 0.592, fold 4 R²=0.376 (이전 0.149 대비 +0.227). |
-| **DL longrun (lr=5e-4, ep=80) 5-fold** | `outputs/experiments/2026-05-26_23-24_dl-multimodal-oes-topk256-longrun-5fold/` | best aggregate R² 0.596. fold 4 R²=0.32 (longrun도 더 못 잡음 — optimization 한계 확인). |
-| **DL OES-only ablation** | `outputs/experiments/2026-05-01_13-00_dl-oes-only-singlefold/` | Modality ablation: OES 단독. R²=0.346. |
-| **DL Process-only ablation (single)** | `outputs/experiments/2026-05-04_11-18_dl-proc-only-singlefold/` | Modality ablation: Proc 단독. R²=0.640. |
-| **DL Process-only ablation (5-fold)** | `outputs/experiments/2026-05-26_01-42_dl-proc-only-singlefold/` | Proc 5-fold. fold 4 R²=0.134 → DL의 process encoder가 XGB stats 추출 못함 확인. |
-| **DL attention pool (실패한 ablation)** | `outputs/experiments/2026-05-01_03-16_dl-oxide-v2-attn-singlefold/` | "Attention pool 시도했지만 mean 보다 나쁨" 보고용. |
+| **XGB baseline (Phase 2)** | `2026-04-30_15-32_baseline-xgb/` | 기준선. 5-fold. oxide R²=0.551. SHAP figure 포함. |
+| **XGB baseline (재실행)** | `2026-05-27_14-00_baseline-xgb/` | 2026-05-27 시점 재실행. 비교 검증용. |
+| **DL multimodal best (single-fold)** | `2026-05-01_00-56_dl-multimodal-singlefold/` | Phase 3 single-fold. FiLM+Fourier+mean pool. fold 0 oxide R²=0.734. |
+| **DL 5-fold baseline (no wavelen sel)** | `2026-05-21_02-09_dl-multimodal-5fold/` | 첫 5-fold. fold 4 collapse 최초 발견 (R²=0.149). |
+| **DL OES topk256 corr 5-fold** | `2026-05-26_02-18_dl-multimodal-oes-corr-topk-5fold/` | OES wavelength selection 첫 성공. R² 0.592. |
+| **DL longrun 5-fold** | `2026-05-26_23-24_dl-multimodal-oes-topk256-longrun-5fold/` | lr=5e-4, ep=80. R² 0.596. |
+| **DL aux-loss 5-fold ★** | `2026-05-27_04-16_dl-multimodal-oes-aux-wafer-mean-5fold/` | **Current best.** R² 0.621. fold 4 R²=0.397. |
+| **DL pwnorm+instnorm 5-fold** | `2026-05-27_19-02_dl-multimodal-pwnorm-instnorm-5fold/` | per-wafer norm + InstanceNorm. R² 0.561. fold 4 악화→0.202. |
+| **LOO-Lot 검증 (aux-loss)** | `2026-05-27_16-06_dl-lot-validation-oxide-aux/` | Leave-One-Lot-Out 10-fold. R² 0.323±0.294. lot 일반화 약점 확인. |
 
-## fold 4 진단 실험 (2026-05-27, 모두 collapse 확정용)
+## Modality Ablation
 
-| 라벨 | 폴더 | 결과 / 결론 |
+| 라벨 | 폴더 | 결과 |
 |---|---|---|
-| **fold 4 seed sweep** | `outputs/experiments/2026-05-27_00-58~01-30_dl-multimodal-oes-corr-topk-5fold-seed{0,1,2,42,100}-fold4/` | 5 seed R² 0.30~0.41, residual corr=0.94, 5-seed ensemble R²=0.39 → **optimization-induced 아님 확정** |
-| **multi-stat pool** | `outputs/experiments/2026-05-27_02-31_dl-multimodal-oes-multistat-pool-5fold/` | [mean,std,max,slope] pool. fold 4 R²=0.33 (불변). 11 wafer pred 4자리까지 동일 → **pool은 병목 아님 확정** |
+| **DL OES-only** | `2026-05-01_13-00_dl-oes-only-singlefold/` | oxide R²=0.346 |
+| **DL Proc-only (single)** | `2026-05-04_11-18_dl-proc-only-singlefold/` | oxide R²=0.640 |
+| **DL Proc-only (5-fold)** | `2026-05-26_01-42_dl-proc-only-singlefold/` | fold 4 R²=0.134 → DL process encoder 한계 |
+| **DL attention pool (실패)** | `2026-05-01_03-16_dl-oxide-v2-attn-singlefold/` | oxide R²=0.643 (mean 0.734보다 나쁨) |
 
-## 실패한 ablation (반례 인용 가능)
+## fold 4 진단 실험 (2026-05-27)
 
-- **drift OES wavelength selection**: `outputs/experiments/2026-05-26_18-38_dl-multimodal-oes-drift-topk-5fold/` — late_mean보다 모든 fold 악화 (fold 4 0.165). 88 wafer×~70 train 규모에서 late-early 차분은 noise 가 더 큼.
-- **top-k=128**: `outputs/experiments/2026-05-26_22-29_dl-multimodal-oes-topk128-5fold/` — top-k=256과 사실상 동일 결과. wavelength 추가 줄이기 무의미.
+| 라벨 | 폴더 | 결론 |
+|---|---|---|
+| **seed sweep** | `2026-05-27_00-58~01-30_*-seed{0,1,2,42,100}-fold4/` | 5 seed R²=0.30~0.41, residual corr=0.94 → structural |
+| **multi-stat pool** | `2026-05-27_02-31_dl-multimodal-oes-multistat-pool-5fold/` | fold 4 불변. wafer_repr collapse 확인 |
 
-## 무시해도 되는 폴더 (스모크/디버깅)
+## 실패한 시도 (반례 인용 가능)
 
-- `2026-04-29_16-20_dl-smoke` — 초기 smoke test
-- `2026-04-29_17-03_dl-multimodal-sanity`, `..._17-39_..._sanity-v2` — sanity check
-- `2026-04-29_18-21_dl-multimodal-singlefold` ~ `2026-04-30_22-41_..._singlefold` — FiLM 도입 전 디버깅 시도들 (si RMSE 폭발 케이스 포함)
-- `2026-04-30_23-14_dl-multimodal-singlefold` — FiLM 없이 돌린 케이스 (si RMSE 1.91, 반례로 인용 가치 O)
-- `2026-04-30_13-46_dl-multimodal-singlefold` — Phase 3 초기 시도
+- **drift OES wavelength**: `2026-05-26_18-38_*-drift-topk-5fold/` — late_mean보다 모든 fold 악화
+- **top-k=128**: `2026-05-26_22-29_*-topk128-5fold/` — 256과 동일 결과
+- **pwnorm+instnorm**: `2026-05-27_19-02_*-pwnorm-instnorm-5fold/` — fold 4 악화
+
+## 무시해도 되는 폴더
+
+- `2026-04-29_16-20_dl-smoke` — smoke test
+- `2026-04-29_17-03~17-39_*-sanity*` — sanity check
+- `2026-04-29_18-21~2026-04-30_22-41_*-singlefold` — FiLM 도입 전 디버깅
+- `2026-04-30_23-14_*-singlefold` — FiLM 없는 케이스 (si RMSE 1.91, 반례 인용 O)
+- `2026-04-30_13-46_*-singlefold` — Phase 3 초기 시도
+- `2026-05-25_*` — late-drift pool, procfilm, seed-reset 등 중간 실험
+- `2026-05-26_00-39_seed-sweep-diagnosis` — 진단 스크립트 실행 결과
+- `2026-05-27_14-39_dl-lot-validation-oxide-aux` — 중단된 LOO 실행 (16-06이 완성본)
 
 ## 참고
 
-- 모든 metrics 는 폴더 내 `metrics.json` 이 1차 truth. NOTES.md 는 자동 시드만 들어있고 비어 있는 경우 많음.
-- 폴더 이름 = `<YYYY-MM-DD_HH-MM>_<slug>` 으로 시간순 정렬. 같은 날 여러 개면 시간으로 구분.
-- 실험 폴더 내부 구조: `config.yaml` (실행 시 사용된 config 복사본), `metrics.json`, `checkpoints/`, `figures/`, `logs/`, `NOTES.md`.
+- metrics.json이 1차 truth. NOTES.md는 자동 시드만.
+- 폴더 이름 = `<YYYY-MM-DD_HH-MM>_<slug>` 시간순 정렬.
+- LOO-Lot split: `cache/v1/splits/loo_lot.npz` (10-fold, fold_lot_mapping=[1..10])
+- LOO-Lot 실행: `.venv\python.exe -m scripts.04_train_dl --config configs/exp_dl_lot_validation.yaml`

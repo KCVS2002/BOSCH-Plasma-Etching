@@ -1,0 +1,97 @@
+# Per-wafer normalization + InstanceNorm — targeting fold 2/4 instability.
+#
+# Diagnosis (fold4_diagnosis.py, 2026-05-27):
+#   Fold 4's input-output correlation DIRECTION is opposite to other folds.
+#   The global normalizer preserves absolute wafer-level offsets that
+#   correlate with oxide differently per fold subset. XGBoost is immune
+#   because its hand-crafted features are already within-wafer statistics.
+#
+# Changes vs exp_dl_multimodal_oes_aux_wafer_mean_5fold.yaml:
+#   1. per_wafer_norm: true — after global z-score, each wafer's OES/Proc
+#      tensor is re-centred to zero mean, unit std. Removes absolute offset
+#      and forces encoder to learn relative temporal/spectral patterns.
+#   2. norm_type: "instance" on both encoders — BatchNorm2d → InstanceNorm2d.
+#      Each cycle is normalised independently (no running stats from training
+#      distribution), complementing per-wafer input norm.
+#   3. aux_wafer_mean kept (proven +0.04 R² on fold 4).
+#
+# Baseline to beat (aux_wafer_mean, 2026-05-27_04-16):
+#   fold 0: 0.747  fold 1: 0.710  fold 2: 0.522  fold 3: 0.730  fold 4: 0.397
+#   aggregate: R² 0.621 ± 0.138
+# Success criteria:
+#   fold 4 R² ≥ 0.50 (match XGB)
+#   aggregate R² ≥ 0.65
+#   fold std/mean ≤ 20% (down from 22%)
+
+experiment:
+  title: "dl multimodal pwnorm instnorm 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  per_wafer_norm: true
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+      norm_type: "instance"
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+      norm_type: "instance"
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    aux_wafer_mean: true
+    aux_wafer_loss_weight: 0.3
+
+training:
+  epochs: 80
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 15
+  loss: "mse"
+  num_workers: 0
+  amp: false

@@ -1,0 +1,74 @@
+# Leave-One-Lot-Out CV — lot-level robustness check for the aux-wafer-mean model.
+# 10 folds (each fold holds out one lot), oxide_etch only.
+# Config cloned from exp_dl_multimodal_oes_aux_wafer_mean_5fold.yaml,
+# only split_file and limit_folds changed.
+
+experiment:
+  title: "dl lot validation oxide aux"
+  seed: 42
+  limit_folds: 10
+
+data:
+  cache_version: "v1"
+  split_file: "splits/loo_lot.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    aux_wafer_mean: true
+    aux_wafer_loss_weight: 0.3
+
+training:
+  epochs: 80
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 15
+  loss: "mse"
+  num_workers: 0
+  amp: false

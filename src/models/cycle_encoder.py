@@ -37,6 +37,7 @@ class CycleEncoderConfig:
                            # main memory lever; first conv goes from W=3648 to
                            # W/stride_chan immediately, halving the activation.
     dropout: float = 0.1
+    norm_type: str = "batch"  # "batch" or "instance"
 
 
 class CycleEncoder2D(nn.Module):
@@ -68,7 +69,10 @@ class CycleEncoder2D(nn.Module):
                 stride=(st, sc),
                 padding=(pad_t, pad_c),
             ))
-            layers.append(nn.BatchNorm2d(out_ch))
+            if cfg.norm_type == "instance":
+                layers.append(nn.InstanceNorm2d(out_ch, affine=True))
+            else:
+                layers.append(nn.BatchNorm2d(out_ch))
             layers.append(nn.GELU())
             if cfg.dropout > 0:
                 layers.append(nn.Dropout2d(cfg.dropout))

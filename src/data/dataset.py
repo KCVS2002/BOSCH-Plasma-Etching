@@ -219,12 +219,14 @@ class WaferCycleStore:
         t_p: int = 30,
         proc_keep_channels: Sequence[str] | None = None,
         xgb_feat_names: Sequence[str] | None = None,
+        per_wafer_norm: bool = False,
     ):
         self.cache_root = Path(cache_root)
         self.t_o = t_o
         self.t_p = t_p
         self.meas = meas
         self.proc_keep_channels = proc_keep_channels  # None = auto-discover
+        self.per_wafer_norm = per_wafer_norm
         self._records: dict[str, WaferRecord] = {}
         self.proc_kept_names: list[str] | None = None  # set by discover_common_proc_channels()
         self.wavelengths: np.ndarray | None = None
@@ -399,6 +401,16 @@ class WaferCycleStore:
         for rec in iterator:
             rec.oes = self.oes_normalizer.apply(rec.oes_raw).astype(np.float32)
             rec.proc = self.proc_normalizer.apply(rec.proc_raw).astype(np.float32)
+            if self.per_wafer_norm:
+                # Per-wafer z-score on top of global normalization:
+                # removes wafer-level absolute offset so the encoder
+                # focuses on relative temporal/spectral patterns.
+                for arr_name in ("oes", "proc"):
+                    arr = getattr(rec, arr_name)
+                    wm = arr.mean()
+                    ws = arr.std()
+                    if ws > 1e-6:
+                        setattr(rec, arr_name, ((arr - wm) / ws).astype(np.float32))
             rec.points_X_norm = self.x_stats.apply(rec.points_X)
             rec.points_Y_norm = self.y_stats.apply(rec.points_Y)
             rec.points_si_norm = self.si_stats.apply(rec.points_si)

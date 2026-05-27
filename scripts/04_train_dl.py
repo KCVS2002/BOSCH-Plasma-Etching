@@ -497,12 +497,14 @@ def main() -> None:
     all_keys = sorted(set(meas["experiment_key"].astype(str).tolist()))
     log(f"\n[setup] loading {len(all_keys)} wafers (one-time, shared across folds)...")
     xgb_feat_names = cfg["data"].get("xgb_feat_names") or None
+    per_wafer_norm = bool(cfg["data"].get("per_wafer_norm", False))
     store = WaferCycleStore(
         cache_root=cache_root,
         meas=meas,
         t_o=int(cfg["data"]["t_o"]),
         t_p=int(cfg["data"]["t_p"]),
         xgb_feat_names=xgb_feat_names,
+        per_wafer_norm=per_wafer_norm,
     )
     t_a = time.time()
     store.discover_common_proc_channels(all_keys)
@@ -516,6 +518,8 @@ def main() -> None:
     log(f"[setup] XGB injection features: {store.n_xgb_feats} "
         f"({'disabled' if store.n_xgb_feats == 0 else ', '.join(store.xgb_feat_names[:3]) + '...'})")
     log(f"[setup] normalisation deferred to per-fold (no val leakage)")
+    if per_wafer_norm:
+        log(f"[setup] per-wafer normalization ENABLED (removes wafer-level absolute offset)")
 
     metrics_out: dict[str, dict] = {}
     fold_csv_rows: list[dict] = []
