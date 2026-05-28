@@ -17,6 +17,7 @@ Run from project root:
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import shutil
 import sys
@@ -83,6 +84,104 @@ def _forward(model: nn.Module, batch: dict, return_aux: bool = False):
         xgb_feat=batch.get("xgb_feat"),
         return_aux=return_aux,
     )
+
+
+def _apply_mixup(
+    batch: dict,
+    alpha: float,
+    prob: float,
+) -> tuple[dict, float]:
+    """Wafer-level mixup augmentation (Zhang et al. 2018).
+
+    Samples a single λ ~ Beta(α, α) and a single permutation per batch, then
+    linearly interpolates EVERY tensor entry (inputs and target) so the
+    supervision stays consistent with the mixed inputs:
+
+        mixed = λ · batch + (1 - λ) · batch[perm]
+
+    Why: the bimodal oxide_etch distribution (low 0.57-0.61 vs high 0.65-0.71)
+    creates a mode-collapse attractor for the encoder — 11 high-mode val
+    wafers in fold 4 collapsed to identical wafer_repr. Mixing pairs across
+    the gap fills the continuum with synthetic intermediates, breaking the
+    binary-classifier basin. Also smears lot boundaries (since cross-lot
+    mixes are common), giving lot-invariance pressure for LOO-Lot evaluation.
+
+    Linearity makes this transparent for the wafer-mean aux loss:
+        mean(λ·t_A + (1-λ)·t_B) = λ·mean(t_A) + (1-λ)·mean(t_B)
+    so the aux head receives consistent (input, target) supervision without
+    any special handling.
+
+    Skipped when B<2 (last batch in epoch when drop_last=False) or by the
+    `prob` roll. Returns (batch, 1.0) in those cases — caller can detect
+    "mixup skipped" via lam==1.0.
+    """
+    target = batch.get("target")
+    if target is None or target.shape[0] < 2:
+        return batch, 1.0
+    if prob < 1.0 and float(np.random.random()) >= prob:
+        return batch, 1.0
+
+    lam = float(np.random.beta(alpha, alpha))
+    bs = target.shape[0]
+    perm = torch.randperm(bs, device=target.device)
+
+    mixed: dict = {}
+    for k, v in batch.items():
+        if isinstance(v, torch.Tensor) and v.shape[0] == bs:
+            mixed[k] = lam * v + (1.0 - lam) * v[perm]
+        else:
+            mixed[k] = v
+    return mixed, lam
+
+
+class WeightEMA:
+    """Exponential moving average of model weights (Polyak averaging).
+
+    Maintains a deep-copied shadow model whose parameters are an EMA of the
+    live model's parameters. Validation and the saved best checkpoint use
+    the shadow's weights, which smooths out the late-stage oscillation
+    caused by mixup's gradient noise and the bimodal loss landscape.
+
+    Update rule (after every optimizer step):
+        ema_p ← d_eff · ema_p + (1 - d_eff) · model_p
+
+    The effective decay ramps up early to avoid biasing toward the
+    randomly-initialised shadow:
+        d_eff = min(decay, (1 + step) / (10 + step))
+    This matches PyTorch's swa_utils.get_ema_avg_fn convention.
+
+    Buffers (e.g. Fourier `freqs` registered buffers) are deterministic
+    constants in this project, so we simply copy them every step rather
+    than averaging — keeping them in sync at no cost.
+    """
+
+    def __init__(self, model: nn.Module, decay: float = 0.999):
+        if not (0.0 < decay < 1.0):
+            raise ValueError(f"ema decay must be in (0, 1), got {decay!r}")
+        self.decay = float(decay)
+        self.ema_model = copy.deepcopy(model)
+        self.ema_model.eval()
+        for p in self.ema_model.parameters():
+            p.requires_grad_(False)
+        # deepcopy fragments RNN weight memory — re-pack into a single flat
+        # block so cuDNN doesn't trigger a UserWarning + repack on every val
+        # forward. In-place ema.update() preserves this layout.
+        for m in self.ema_model.modules():
+            if isinstance(m, nn.RNNBase):
+                m.flatten_parameters()
+        self.num_updates = 0
+
+    @torch.no_grad()
+    def update(self, model: nn.Module) -> None:
+        self.num_updates += 1
+        d_eff = min(self.decay, (1.0 + self.num_updates) / (10.0 + self.num_updates))
+        one_minus_d = 1.0 - d_eff
+        for ema_p, p in zip(self.ema_model.parameters(), model.parameters()):
+            ema_p.mul_(d_eff).add_(p.detach(), alpha=one_minus_d)
+        # Sync non-trainable buffers (e.g. Fourier freqs); these are constants
+        # in our model, so copy is correct (no averaging).
+        for ema_b, b in zip(self.ema_model.buffers(), model.buffers()):
+            ema_b.copy_(b)
 
 
 def _fold_lot(split, fold: int) -> int | None:
@@ -240,6 +339,28 @@ def train_one_fold(
     if has_aux:
         log(f"    [aux] wafer-mean aux head ENABLED, weight={aux_weight}")
 
+    # Mixup config (training.mixup section, all keys optional)
+    mixup_cfg = cfg["training"].get("mixup") or {}
+    mixup_enabled = bool(mixup_cfg.get("enabled", False))
+    mixup_alpha = float(mixup_cfg.get("alpha", 0.2))
+    mixup_prob = float(mixup_cfg.get("prob", 1.0))
+    if mixup_enabled:
+        log(f"    [mixup] ENABLED  alpha={mixup_alpha}  prob={mixup_prob}")
+
+    # EMA config (training.ema section, all keys optional). When enabled,
+    # validation and best_state are taken from the shadow EMA model.
+    ema_cfg = cfg["training"].get("ema") or {}
+    ema_enabled = bool(ema_cfg.get("enabled", False))
+    ema_decay = float(ema_cfg.get("decay", 0.999))
+    ema: WeightEMA | None = WeightEMA(model, decay=ema_decay) if ema_enabled else None
+    if ema is not None:
+        log(f"    [ema] ENABLED  decay={ema_decay}  validates on shadow weights")
+
+    # patience <= 0 disables early stopping (still tracks best_state every epoch)
+    early_stop_active = patience > 0
+    if not early_stop_active:
+        log(f"    [early-stop] DISABLED (patience={patience}). Will run full {n_epochs} epochs.")
+
     best_val_rmse = float("inf")
     best_state: dict | None = None
     best_epoch = -1
@@ -252,6 +373,10 @@ def train_one_fold(
         model.train()
         train_loss_sum = 0.0
         train_n = 0
+        # Track mean λ across batches in this epoch (only batches where mixup
+        # was actually applied — skipped batches contribute lam=1.0 which we
+        # exclude to avoid biasing the mean).
+        mixup_lams_applied: list[float] = []
         train_bar = tqdm(
             train_dl,
             desc=f"  ep {epoch:3d} train",
@@ -261,6 +386,10 @@ def train_one_fold(
         )
         for batch in train_bar:
             batch = _move_batch(batch, device)
+            if mixup_enabled:
+                batch, lam = _apply_mixup(batch, alpha=mixup_alpha, prob=mixup_prob)
+                if lam != 1.0:
+                    mixup_lams_applied.append(lam)
             optim.zero_grad()
             if use_amp:
                 with torch.cuda.amp.autocast():
@@ -286,6 +415,10 @@ def train_one_fold(
                     loss = loss_fn(pred, batch["target"])
                 loss.backward()
                 optim.step()
+            # EMA update lives AFTER the optimizer step so the shadow tracks
+            # post-update weights (the actual trajectory the optimizer takes).
+            if ema is not None:
+                ema.update(model)
             bs_actual = batch["target"].shape[0]
             # Log the per-point loss only (matches baseline `train_loss` semantics
             # and keeps `train_rmse` conversion below valid). Aux contribution is
@@ -297,7 +430,11 @@ def train_one_fold(
         train_loss = train_loss_sum / max(train_n, 1)
 
         # ---- val ----
-        model.eval()
+        # When EMA is enabled, evaluate on the shadow weights. The shadow
+        # tracks a smoothed trajectory through weight space → smoother val
+        # curves → patience / best-state decisions become more robust.
+        eval_model = ema.ema_model if ema is not None else model
+        eval_model.eval()
         val_preds: list[np.ndarray] = []
         val_truth: list[np.ndarray] = []
         val_bar = tqdm(
@@ -312,9 +449,9 @@ def train_one_fold(
                 batch = _move_batch(batch, device)
                 if use_amp:
                     with torch.cuda.amp.autocast():
-                        pred = _forward(model, batch)
+                        pred = _forward(eval_model, batch)
                 else:
-                    pred = _forward(model, batch)
+                    pred = _forward(eval_model, batch)
                 val_preds.append(pred.detach().float().cpu().numpy().reshape(-1))
                 val_truth.append(batch["target"].detach().float().cpu().numpy().reshape(-1))
         v_pred = np.concatenate(val_preds)
@@ -341,7 +478,7 @@ def train_one_fold(
             train_rmse_raw = float("nan")
 
         ep_dt = time.time() - ep_t0
-        epoch_log_rows.append({
+        row = {
             "epoch": epoch,
             "train_loss": round(train_loss, 6),
             "train_rmse": round(train_rmse_raw, 6),
@@ -351,19 +488,29 @@ def train_one_fold(
             "val_mape": round(float(val_m["mape_pct"]), 2),
             "lr": float(optim.param_groups[0]["lr"]),
             "elapsed_s": round(ep_dt, 2),
-        })
+        }
+        if mixup_enabled:
+            n_applied = len(mixup_lams_applied)
+            row["mixup_n_applied"] = n_applied
+            row["mixup_lam_mean"] = (
+                round(float(np.mean(mixup_lams_applied)), 4) if n_applied else float("nan")
+            )
+        epoch_log_rows.append(row)
         log(f"    ep {epoch:3d} ({ep_dt:.1f}s): train_loss={train_loss:.4f} "
             f"train_rmse={train_rmse_raw:.4f} val_rmse={val_m['rmse']:.4f} "
             f"val_r2={val_m['r2']:.4f} val_mape={val_m['mape_pct']:.2f}%")
 
         if np.isfinite(val_m["rmse"]) and val_m["rmse"] < best_val_rmse - 1e-8:
             best_val_rmse = float(val_m["rmse"])
-            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            # When EMA is enabled, save shadow weights — they're what produced
+            # this val_rmse, and they're what we want for final inference.
+            state_source = ema.ema_model if ema is not None else model
+            best_state = {k: v.detach().cpu().clone() for k, v in state_source.state_dict().items()}
             best_epoch = epoch
             epochs_since_best = 0
         else:
             epochs_since_best += 1
-            if epochs_since_best >= patience:
+            if early_stop_active and epochs_since_best >= patience:
                 log(f"    early stop @ epoch {epoch} (best {best_epoch}, "
                     f"val_rmse={best_val_rmse:.4f})")
                 break
@@ -371,6 +518,11 @@ def train_one_fold(
     # ---- Reload best, final val predictions ----
     if best_state is not None:
         model.load_state_dict(best_state)
+        # state dict load can fragment LSTM weight memory — repack for fast
+        # final inference (and downstream interpret scripts that load .pt).
+        for m in model.modules():
+            if isinstance(m, nn.RNNBase):
+                m.flatten_parameters()
     model.eval()
     final_preds: list[np.ndarray] = []
     final_truth: list[np.ndarray] = []

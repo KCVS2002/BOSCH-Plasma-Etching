@@ -1,0 +1,114 @@
+# Wafer-level mixup + aux-loss — pure-DL attempt to break the bimodal mode
+# collapse (fold 4) and soften lot-specific shortcuts (LOO-Lot weakness).
+#
+# Motivation:
+#   Current best (aux-loss): agg R²=0.621, fold 4=0.397, LOO-Lot agg=0.323.
+#   Three remaining problems all share a root: encoder produces too-similar
+#   representations for wafers within the same regime/lot, so it
+#   - collapses 11 high-mode wafers in fold 4 to nearly identical wafer_repr
+#   - overfits lot-specific patterns (LOO-Lot fails on new lots)
+#   - struggles in fold 2 (small overfitting margin)
+#
+#   Wafer-level mixup synthesizes intermediate wafers (cross-mode, cross-lot)
+#   by linear interpolation of all inputs and target with the SAME λ. This:
+#   1) Fills the bimodal gap with synthetic intermediates → breaks the
+#      binary-classifier collapse attractor.
+#   2) Cross-lot mixes pressure the encoder to NOT use lot-identifying
+#      OES/proc signatures (since mixed-lot inputs have mixed-lot targets).
+#   3) Acts as strong regularization on the small (88-wafer) dataset.
+#
+# Change vs exp_dl_multimodal_oes_aux_wafer_mean_5fold.yaml:
+#   - training.mixup.enabled: true (alpha=0.2, prob=1.0)
+#   - Everything else identical (aux-loss kept — mixup is additive)
+#
+# alpha=0.2 (Beta(0.2, 0.2)) is the standard "lite mixup" — U-shaped
+# distribution puts most λ near 0 or 1 (mostly clean batches with occasional
+# heavy mixes). prob=1.0 means every batch sees a λ draw (whether the draw
+# happens to be near-1 depends on the U-shape, not on a coin flip).
+#
+# Linearity guarantee: aux head's wafer-mean target is preserved because
+#   mean(λ·t_A + (1-λ)·t_B) = λ·mean(t_A) + (1-λ)·mean(t_B)
+# so no special handling of the aux supervision is needed.
+#
+# Baseline to beat (aux-loss only):
+#   fold 0: 0.747  fold 1: 0.710  fold 2: 0.522  fold 3: 0.730  fold 4: 0.397
+#   aggregate: R² 0.621 ± 0.138, LOO-Lot agg: 0.323
+# Success criteria:
+#   fold 4 R²:        0.397 → 0.50+ (mode collapse broken further)
+#   fold 2 R²:        0.522 → 0.60+ (regularization helps overfitting fold)
+#   aggregate R²:     0.621 → 0.70+ without regression on fold 0/1/3
+#   LOO-Lot agg R²:   0.323 → 0.45+ (key indicator for lot-invariance)
+
+experiment:
+  title: "dl multimodal oes aux mixup 5fold"
+  seed: 42
+  limit_folds: 5
+
+data:
+  cache_version: "v1"
+  split_file: "splits/kfold5_wafer.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    aux_wafer_mean: true
+    aux_wafer_loss_weight: 0.3
+
+training:
+  epochs: 80
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 15
+  loss: "mse"
+  num_workers: 0
+  amp: false
+  mixup:
+    enabled: true
+    alpha: 0.2      # Beta(α, α). 0.2 = U-shaped lite mixup. Try 0.4/1.0 if no effect.
+    prob: 1.0       # apply on every batch (Beta itself already produces clean-ish samples)
