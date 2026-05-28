@@ -1,6 +1,6 @@
 ---
 name: Key Experiment References
-description: 실험 폴더 라벨링 — best model, ablations, diagnostics. 2026-05-27 기준 aux-loss가 best, LOO-Lot 검증 완료.
+description: 실험 폴더 라벨링 — best model, ablations, diagnostics. 2026-05-28 기준 aux+mixup+EMA 120ep이 best. LOO-Lot 재검증 대기.
 metadata:
   type: reference
 ---
@@ -9,7 +9,7 @@ metadata:
 
 | 라벨 | 폴더 | 성능 |
 |---|---|---|
-| **DL aux-loss 5-fold ★ (current best)** | `2026-05-27_04-16_dl-multimodal-oes-aux-wafer-mean-5fold` | oxide R² 0.621±0.138, RMSE 0.0468±0.009 |
+| **DL aux+mixup+EMA 120ep ★★ (current best)** | `2026-05-28_04-19_dl-multimodal-oes-aux-mixup-ema-longrun-5fold` | oxide R² **0.666±0.110**, RMSE **0.0440±0.007**. fold 4 R²=0.588. config: `exp_dl_multimodal_oes_aux_mixup_ema_longrun_5fold.yaml` |
 
 ## Canonical 실험 (논문/발표 인용 대상)
 
@@ -20,10 +20,12 @@ metadata:
 | **DL multimodal best (single-fold)** | `2026-05-01_00-56_dl-multimodal-singlefold/` | Phase 3 single-fold. FiLM+Fourier+mean pool. fold 0 oxide R²=0.734. |
 | **DL 5-fold baseline (no wavelen sel)** | `2026-05-21_02-09_dl-multimodal-5fold/` | 첫 5-fold. fold 4 collapse 최초 발견 (R²=0.149). |
 | **DL OES topk256 corr 5-fold** | `2026-05-26_02-18_dl-multimodal-oes-corr-topk-5fold/` | OES wavelength selection 첫 성공. R² 0.592. |
-| **DL longrun 5-fold** | `2026-05-26_23-24_dl-multimodal-oes-topk256-longrun-5fold/` | lr=5e-4, ep=80. R² 0.596. |
-| **DL aux-loss 5-fold ★** | `2026-05-27_04-16_dl-multimodal-oes-aux-wafer-mean-5fold/` | **Current best.** R² 0.621. fold 4 R²=0.397. |
-| **DL pwnorm+instnorm 5-fold** | `2026-05-27_19-02_dl-multimodal-pwnorm-instnorm-5fold/` | per-wafer norm + InstanceNorm. R² 0.561. fold 4 악화→0.202. |
-| **LOO-Lot 검증 (aux-loss)** | `2026-05-27_16-06_dl-lot-validation-oxide-aux/` | Leave-One-Lot-Out 10-fold. R² 0.323±0.294. lot 일반화 약점 확인. |
+| **DL longrun 5-fold (mean-pool baseline)** | `2026-05-26_23-24_dl-multimodal-oes-topk256-longrun-5fold/` | lr=5e-4, ep=80. R² 0.596. aux/mixup 도입 전 best. |
+| **DL aux-loss 5-fold** | `2026-05-27_04-16_dl-multimodal-oes-aux-wafer-mean-5fold/` | wafer-mean aux head 도입. R² 0.621. fold 4 R²=0.397 (mode collapse 부분 완화). |
+| **DL pwnorm+instnorm 5-fold** | `2026-05-27_19-02_dl-multimodal-pwnorm-instnorm-5fold/` | per-wafer norm + InstanceNorm. R² 0.561. fold 4 악화→0.202. **시도 금지 ablation**. |
+| **DL aux+mixup 5-fold** | `2026-05-28_03-16_dl-multimodal-oes-aux-mixup-5fold/` | wafer-level mixup 도입. R² 0.644±0.087. fold 4 0.40→0.56. mixup 효과 단독 측정용 ablation. |
+| **DL aux+mixup+EMA 120ep ★★** | `2026-05-28_04-19_dl-multimodal-oes-aux-mixup-ema-longrun-5fold/` | **Current best.** EMA + 120ep + no-early-stop 추가. R² 0.666. fold 0=0.75, f1=0.72, f2=0.49, f3=0.78, f4=0.59. |
+| **LOO-Lot 검증 (aux-loss)** | `2026-05-27_16-06_dl-lot-validation-oxide-aux/` | Leave-One-Lot-Out 10-fold. R² 0.323±0.294. lot 일반화 약점 확인. **현 best 모델(aux+mixup+EMA)으로 재실험 필요**. |
 
 ## Modality Ablation
 

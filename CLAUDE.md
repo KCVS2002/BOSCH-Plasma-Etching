@@ -11,15 +11,26 @@ BOSCH DRIE 플라즈마 에칭 공정의 Virtual Metrology — OES + Process 센
 
 자세한 도메인·전략은 [docs/연구계획서_초안.md](docs/연구계획서_초안.md) 참조.
 
-### 1.1 현재 진행 상황 (2026-05-08)
+### 1.1 현재 진행 상황 (2026-05-28)
 
-- **Phase 1·2 완료, Phase 3 single-fold 완료, Phase 4 일부 완료, 중간 발표 마침.**
-- **Best 모델:** [outputs/experiments/2026-05-01_00-56_dl-multimodal-singlefold/](outputs/experiments/2026-05-01_00-56_dl-multimodal-singlefold/) — Multimodal (FiLM + Fourier xy + mean pool). oxide RMSE 0.0399 / R² 0.734 (XGB 대비 -22%, 졸업논문 종료기준 1번 달성).
-- **다음 작업 후보:** ① 5-fold 확장으로 안정성 (std/mean ≤ 10%) 검증, ② sequence/encoder ablation (연구계획서 Exp 5/6), ③ 해석 분석 확장 (현재 oxide fold0 만).
+- **Phase 1·2 완료, Phase 3 5-fold 완료, Phase 4 일부 완료, 중간 발표 마침.**
+- **Best 모델 (5-fold wafer CV):** [outputs/experiments/2026-05-28_04-19_dl-multimodal-oes-aux-mixup-ema-longrun-5fold/](outputs/experiments/2026-05-28_04-19_dl-multimodal-oes-aux-mixup-ema-longrun-5fold/)
+  - oxide R² **0.666±0.110**, RMSE **0.0440±0.007** (XGB 0.551±0.082 대비 +0.115)
+  - fold별 R²: 0.75 / 0.72 / 0.49 / 0.78 / 0.59 — fold 2가 새 bottleneck
+  - config: `configs/exp_dl_multimodal_oes_aux_mixup_ema_longrun_5fold.yaml`
+- **현 best 모델 기술 stack**: OES wavelength selection(top_k=256, late_mean) + FiLM/Fourier xy + mean pool + **wafer-mean aux loss + wafer-level mixup + EMA(0.999) + 120ep no-early-stop**.
+- **다음 작업 후보:**
+  - ① **LOO-Lot 재검증** (현 best 모델로) — 이전 aux-only는 R²=0.323. mixup 효과 검증 필요.
+  - ② fold 2 overfitting 대응 — distribution outlier 문제 (2024-08-22_04 wafer)
+  - ③ 5-fold 해석 분석 확장 (현재 fold 0만)
+  - ④ Sequence/encoder ablation (연구계획서 Exp 5/6)
 - **확정된 설계 결정** (다른 agent 가 다시 시도하지 말 것):
-  - `pool=attention` 은 oxide 에서 악화 → mean pool 유지
-  - `use_film=true`, `xy_n_freqs=6` 필수 (없으면 si RMSE 폭발)
-  - OES-only, Proc-only ablation 완료. multimodal 이 둘보다 +0.094 R² 우월
+  - `pool=attention/multi_stat/mean_late_drift` 모두 oxide 악화 → **mean pool 유지**
+  - `use_film=true`, `xy_n_freqs=6` 필수
+  - OES wavelength selection: `top_k=256, stat=late_mean` (drift 실패)
+  - `aux_wafer_mean: true`, `mixup.enabled: true`, `ema.enabled: true` — 모두 main 유지
+  - `per_wafer_norm + InstanceNorm` 시도 금지 (fold 4 악화 확인)
+  - Optimization 변경(lr/seed/scheduler/seed ensemble)만으로 fold 4 collapse 해결 불가
 - 자세한 진행 상황·실험 폴더 라벨링은 [memory/project_progress.md](memory/project_progress.md), [memory/reference_experiments.md](memory/reference_experiments.md), [memory/project_dl_design_decisions.md](memory/project_dl_design_decisions.md) 참조.
 
 ---

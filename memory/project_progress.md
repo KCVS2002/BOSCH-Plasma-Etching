@@ -1,8 +1,92 @@
 ---
 name: BOSCH Plasma Etching Project Progress
-description: Phase-by-phase progress log — 2026-05-27 기준. aux-loss 5-fold 완료, pwnorm+instnorm 5-fold 완료, LOO-Lot 검증 완료. 다음은 lot 강건성 개선.
+description: 2026-05-28 기준. aux+mixup+EMA+120ep no-early-stop 5-fold 완료 — new best agg R²=0.666. 다음 우선순위는 fold 2 overfitting + LOO-Lot 재검증.
 metadata:
   type: project
+---
+
+## 한눈에 보기 (2026-05-28 최종 업데이트)
+
+**aux + mixup + EMA + 120ep no-early-stop → new best agg R²=0.666.** fold 4 0.59 (XGB 0.62에 근접), fold 0/1/3 모두 ≥ 0.72. **fold 2가 새 bottleneck (0.49, overfitting)** — distribution-outlier 문제로 mixup/aux도 못 풀음.
+
+### 현재 best 모델 (5-fold wafer CV, oxide_etch)
+
+| 실험 | f0 | f1 | f2 | f3 | f4 | agg R²±std | RMSE±std |
+|---|---|---|---|---|---|---|---|
+| XGB baseline | 0.56 | 0.49 | 0.43 | 0.65 | 0.62 | 0.551±0.082 | 0.0514±0.004 |
+| DL baseline longrun | 0.71 | 0.70 | 0.50 | 0.75 | 0.32 | 0.596±0.163 | 0.0482±0.010 |
+| DL aux-loss | 0.75 | 0.71 | 0.52 | 0.73 | 0.40 | 0.621±0.138 | 0.0468±0.009 |
+| DL aux+mixup | 0.73 | 0.69 | 0.52 | 0.73 | 0.56 | 0.644±0.087 | 0.0458±0.006 |
+| **DL aux+mixup+EMA 120ep ★** | **0.75** | **0.72** | **0.49** | **0.78** | **0.59** | **0.666±0.110** | **0.0440±0.007** |
+
+**Best 폴더**: `outputs/experiments/2026-05-28_04-19_dl-multimodal-oes-aux-mixup-ema-longrun-5fold/`
+**Best config**: `configs/exp_dl_multimodal_oes_aux_mixup_ema_longrun_5fold.yaml`
+
+### 2026-05-28 실험 타임라인 (개선 chain)
+
+1. **aux+mixup 80ep** (`03-16`): mixup이 fold 4 mode collapse를 깨뜨려 R² 0.40→0.56. agg std 0.138→0.087로 안정성 큰 폭 개선.
+2. **aux+mixup+EMA 120ep no-early-stop** (`04-19`): EMA가 late-stage 진동 흡수 + 120ep로 fold 4 추가 학습 여유. fold 4 0.56→0.59, fold 3 0.725→0.781, agg 0.644→0.666.
+
+### 핵심 기술 stack (현 best 모델 구성)
+
+1. **OES wavelength selection**: per-fold train-only correlation top-k=256, stat=late_mean
+2. **Multimodal early fusion**: OES + Process 2D-CNN → BiLSTM → mean-pool → wafer_repr (256-dim)
+3. **FiLM + Fourier(X,Y, n_freqs=6)** head — 89 point 차별화 필수
+4. **Wafer-mean auxiliary loss** (λ=0.3): wafer_repr → Linear(d, 1)로 wafer mean 직접 예측, mode collapse 압력 차단
+5. **Wafer-level mixup** (Beta(0.2, 0.2), prob=1.0): bimodal collapse attractor 파괴 + 데이터 augmentation
+6. **EMA weight averaging** (decay=0.999, ramp-up): val/inference shadow weights — mixup noise 흡수
+7. **120 epochs, no early stopping**: best_state는 매 epoch 추적, EMA val_rmse 기준
+
+### 진단 지표 변화 (fold 4)
+
+- wafer_mean_corr: 0.63 (aux) → 0.82 (mixup) → **0.84** (EMA)
+- std_ratio: 0.66 → 0.65 → 0.67
+- 11개 high-mode wafer "동일 0.677" collapse 패턴 → 0.67-0.69 사이로 spread
+- 잔존 문제: 2024-07-11_01, _02 (extreme high oxide, July OES) bias -0.03 (이전 -0.07)
+
+### 현재 약점 (다음에 풀어야 할 것)
+
+#### 1. fold 2 overfitting (새 bottleneck)
+- best_ep=39 (120 중) — 일찍 best 찍고 점진 하락 (val_r2 0.49 → 0.38)
+- **train_rmse 0.075→0.030**, val_rmse plateau at ~0.055 → 전형적 overfitting
+- 핵심 원인: **2024-08-22_04 (y_true=0.6165, bimodal 사이 unique mid-range)** — train에 비슷한 wafer 없음, distribution outlier
+- mixup/aux/EMA 모두 못 풀음 → fold 2엔 별도 접근 필요
+
+#### 2. LOO-Lot 미검증 (이전 aux-loss 모델 R²=0.323이었음)
+- 현 best 모델 (aux+mixup+EMA)에서 LOO-Lot 재실행 안 됨
+- mixup이 lot-invariance에 효과 있는지 핵심 검증 필요
+- 졸업논문 lot-robustness 주장의 근거가 될 핵심 실험
+
+### 다음 우선순위 (이어서 작업할 agent를 위해)
+
+#### A. LOO-Lot 재검증 (최우선, 1시간)
+**현 best 모델 (aux+mixup+EMA)을 LOO-Lot으로 평가.** 이전 aux-only는 R²=0.323이었음. mixup이 lot-invariance에 효과 있다면 0.40+로 올라야 함.
+- config 복제: `configs/exp_dl_lot_validation.yaml` 기반으로 mixup + EMA 옵션 추가
+- 또는 best config의 split만 `splits/loo_lot.npz`로 바꿔서 실행
+
+#### B. fold 2 overfitting 대응
+fold 2 best_ep=39이고 이후 하락 → **fold 2만 별도로** 더 강한 regularization 필요. 후보:
+- **Dropout 상향**: head_dropout 0.2 → 0.3, encoder dropout 0.1 → 0.2 (모든 fold에 적용. 단점: fold 0/1/3 성능 회귀 위험)
+- **Weight decay 상향**: 1e-4 → 5e-4 또는 1e-3
+- **mixup α 상향**: 0.2 → 0.4 (mixup이 fold 2에 효과가 있다면 강도 ↑로 추가 이득)
+- **Cycle dropout (random cycle masking)**: 100 cycle 중 일부 마스킹 → 더 robust한 표현
+- **2024-08-22_04 단독 분석**: 이 wafer가 정말 outlier인지, OES/proc 특성 분석. fold 2 train에 비슷한 wafer 1개라도 있는지 확인
+
+#### C. 졸업논문 결과 정리
+- 5-fold + LOO-Lot ablation table 완성 (baseline → aux → mixup → EMA → 120ep 누적 효과)
+- agg std/mean = 16.5% (현재) → 10% 목표 미달. fold 2가 발목.
+- 해석 분석 (SHAP, attribution)을 5개 fold 모두로 확장
+
+### 확정된 설계 결정 (반복 시도 금지)
+
+- `pool=attention`, `pool=multi_stat`, `pool=mean_late_drift` 모두 fold 4에 효과 없음 → **mean pool 유지**
+- `use_film=true`, `xy_n_freqs=6` **필수**
+- OES wavelength selection: **top_k=256, stat=late_mean** (drift 실패, top_k=128 동등)
+- **per-wafer norm + InstanceNorm**: fold 4 악화 — 절대 시도 금지
+- **seed ensemble**: residual corr=0.94로 무효
+- **Optimization 변경 (lr/scheduler/epoch만)**: fold 4 collapse 해결 불가
+- **EMA + mixup + aux-loss + 120ep no-early-stop**: 현 best 조합. 분리해서 ablation 가능하나 main config로 유지
+
 ---
 
 ## 한눈에 보기 (2026-05-27 최종 업데이트)
