@@ -1,0 +1,68 @@
+{
+  "oxide_etch": {
+    "per_fold": [
+      {
+        "rmse": 0.06576932117092289,
+        "mae": 0.03907406927271282,
+        "r2": 0.3003782863288629,
+        "mape_pct": 6.068778415341926,
+        "fold": 0,
+        "best_epoch": 101,
+        "n_train": 6230,
+        "n_val": 1602,
+        "fit_seconds": 1020.78,
+        "train_target_mean": 0.6587971448898315,
+        "train_target_std": 0.07695025950670242,
+        "val_target_mean": 0.6556240320205688,
+        "val_target_std": 0.07863062620162964,
+        "target_mean_shift": -0.0031731128692626953
+      },
+      {
+        "rmse": 0.037255310156464695,
+        "mae": 0.02058372218641948,
+        "r2": 0.7658427421468136,
+        "mape_pct": 3.036902790247226,
+        "fold": 1,
+        "best_epoch": 105,
+        "n_train": 6319,
+        "n_val": 1513,
+        "fit_seconds": 1281.32,
+        "train_target_mean": 0.6577274203300476,
+        "train_target_std": 0.07737745344638824,
+        "val_target_mean": 0.6599050760269165,
+        "val_target_std": 0.07699000835418701,
+        "target_mean_shift": 0.0021776556968688965
+      }
+    ],
+    "aggregate": {
+      "rmse_mean": 0.0515123156636938,
+      "rmse_std": 0.014257005507229099,
+      "mae_mean": 0.02982889572956615,
+      "mae_std": 0.00924517354314667,
+      "r2_mean": 0.5331105142378383,
+      "r2_std": 0.23273222790897535,
+      "mape_pct_mean": 4.552840602794576,
+      "mape_pct_std": 1.5159378125473502,
+      "fold_mean": 0.5,
+      "fold_std": 0.5,
+      "best_epoch_mean": 103.0,
+      "best_epoch_std": 2.0,
+      "n_train_mean": 6274.5,
+      "n_train_std": 44.5,
+      "n_val_mean": 1557.5,
+      "n_val_std": 44.5,
+      "fit_seconds_mean": 1151.05,
+      "fit_seconds_std": 130.26999999999998,
+      "train_target_mean_mean": 0.6582622826099396,
+      "train_target_mean_std": 0.0005348622798919678,
+      "train_target_std_mean": 0.07716385647654533,
+      "train_target_std_std": 0.00021359696984291077,
+      "val_target_mean_mean": 0.6577645540237427,
+      "val_target_mean_std": 0.002140522003173828,
+      "val_target_std_mean": 0.07781031727790833,
+      "val_target_std_std": 0.0008203089237213135,
+      "target_mean_shift_mean": -0.0004977285861968994,
+      "target_mean_shift_std": 0.002675384283065796
+    }
+  }
+}

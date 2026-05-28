@@ -191,7 +191,8 @@ def main() -> None:
           f"{meas['lot_number'].nunique()} lots)")
 
     # ---- 1. K-fold (main) -----------------------------------------------
-    kfold_path = splits_dir / f"kfold{args.kfolds}_wafer.npz"
+    seed_suffix = "" if args.seed == 42 else f"_seed{args.seed}"
+    kfold_path = splits_dir / f"kfold{args.kfolds}_wafer{seed_suffix}.npz"
     kfold = make_kfold_split(meas, n_splits=args.kfolds, seed=args.seed)
     _save(kfold, kfold_path)
     kfold_summary = _summarise(kfold, meas)
@@ -235,10 +236,11 @@ def main() -> None:
             "folds": loo_summary["folds"],
         },
     }
-    (splits_dir / "manifest.json").write_text(
+    manifest_path = splits_dir / f"manifest{seed_suffix}.json"
+    manifest_path.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    print(f"\nSaved manifest: {(splits_dir / 'manifest.json').relative_to(PROJECT_ROOT)}")
+    print(f"\nSaved manifest: {manifest_path.relative_to(PROJECT_ROOT)}")
 
 
 if __name__ == "__main__":
