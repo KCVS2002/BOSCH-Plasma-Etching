@@ -7,6 +7,7 @@ from .cycle_stats import (
 )
 from .oes_selection import (
     compute_oes_wavelength_scores,
+    oes_score_cache_path,
     select_top_k_wavelengths,
 )
 
@@ -15,6 +16,7 @@ __all__ = [
     "compute_oes_wavelength_scores",
     "extract_baseline_features_one_wafer",
     "load_or_build_features",
+    "oes_score_cache_path",
     "per_cycle_oes_band_means",
     "per_cycle_process_means",
     "select_top_k_wavelengths",

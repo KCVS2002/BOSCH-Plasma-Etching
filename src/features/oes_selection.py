@@ -13,6 +13,8 @@ input transform (`fit_oes_normalizer` applies log1p before z-scoring).
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Sequence
 
@@ -67,11 +69,15 @@ def compute_oes_wavelength_scores(
     stat: str = "late_mean",
     late_start_cycle: int = 80,
     early_end_cycle: int = 20,
+    cache_path: Path | None = None,
 ) -> np.ndarray:
     """|Pearson corr| of shape (W,) — wavelength stat vs wafer-mean target.
 
     Uses TRAIN wafers only.
     """
+    if cache_path is not None and cache_path.exists():
+        return np.load(cache_path).astype(np.float32, copy=False)
+
     feats: list[np.ndarray] = []
     targets: list[float] = []
     for k in train_keys:
@@ -91,7 +97,36 @@ def compute_oes_wavelength_scores(
     num = (X_c * y_c[:, None]).sum(axis=0)             # (W,)
     den = np.sqrt((X_c ** 2).sum(axis=0) * (y_c ** 2).sum())
     corr = num / np.maximum(den, 1e-12)
-    return np.abs(corr).astype(np.float32)
+    scores = np.abs(corr).astype(np.float32)
+    if cache_path is not None:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(cache_path, scores)
+    return scores
+
+
+def oes_score_cache_path(
+    cache_root: Path,
+    train_keys: Sequence[str],
+    target: str,
+    stat: str,
+    late_start_cycle: int,
+    early_end_cycle: int,
+) -> Path:
+    payload = {
+        "train_keys": sorted(str(k) for k in train_keys),
+        "target": str(target),
+        "stat": str(stat),
+        "late_start_cycle": int(late_start_cycle),
+        "early_end_cycle": int(early_end_cycle),
+    }
+    digest = hashlib.sha1(
+        json.dumps(payload, ensure_ascii=True, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:12]
+    name = (
+        f"{target}_{stat}_ls{int(late_start_cycle)}_"
+        f"ee{int(early_end_cycle)}_{digest}.npy"
+    )
+    return Path(cache_root) / "features" / "oes_scores" / name
 
 
 def select_top_k_wavelengths(scores: np.ndarray, top_k: int) -> np.ndarray:

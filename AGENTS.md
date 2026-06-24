@@ -192,6 +192,32 @@ EDA 그림은 숫자 prefix로 구분: `01_oes_cycle_overview.png`, `08_gasflow_
 - 반드시 **wafer 단위 GroupKFold** (같은 웨이퍼의 89 포인트가 train/val 에 분산되면 누수).
 - split 인덱스는 `cache/vN/splits/kfold_K.npz` 로 저장, 학습 스크립트는 이걸 로드만 한다.
 
+### 5.4. DL 전처리 캐시 (RunPod / cloud GPU)
+
+- DL 학습 전 CPU-heavy 단계는 `scripts/10_prepare_dl_cache.py` 로 미리 생성한 캐시를 재사용한다.
+- RunPod 업로드용 대표 생성 명령은 `normalizers` 레벨을 권장한다. `dl_tensors` 는 split seed와 무관하게 1회만 공유되고, fold별 normalizer/score 캐시는 작다:
+
+```bash
+.venv\Scripts\python.exe -m scripts.10_prepare_dl_cache --config configs/exp_dl_multimodal_oes_aux_mixup_ema_longrun_5fold.yaml --level normalizers
+```
+
+- `--level normalized` 는 가장 빠르지만 full OES tensor를 fold별로 복제해 seed당 수십~100GB까지 커질 수 있으므로 로컬 SSD 검증용으로만 쓴다. RunPod 업로드 대상에서는 보통 제외한다.
+- `scripts/04_train_dl.py` 의 기본값은 `data.dl_cache.mode: "auto"` 이다. 즉 config에 `dl_cache`가 없어도 사용 가능한 DL 캐시가 있으면 자동으로 가장 빠른 캐시(`normalized` → `normalizers` → `tensors`)를 사용하고, 없으면 기존 방식으로 실행한다.
+- `data.dl_cache.mode: "normalized"` 를 명시한 학습은 `cache/vN/dl_tensors/`, `cache/vN/dl_normalizers/`, `cache/vN/dl_normalized/`, `cache/vN/features/oes_scores/` 를 로드한다.
+- 다음 항목이 바뀌면 기존 DL 캐시는 무효일 수 있으므로 반드시 재생성해야 한다:
+  - `cache_version`
+  - `split_file`
+  - `t_o`, `t_p`
+  - `per_wafer_norm`
+  - `xgb_feat_names`
+  - 공통 process channel 선택/정렬 로직
+  - OES/Process cycle tensor resampling 로직
+  - OES log/normalization 방식, process normalization 방식, scalar XY/target normalization 방식
+  - OES wavelength selection score 계산 로직 또는 `oes_band_selection` 설정
+- 위 항목에 영향을 주는 코드나 config를 수정한 agent는 최종 답변에서 **반드시 사용자에게 DL 캐시 재생성 필요 여부와 실행 명령**을 알려야 한다.
+- 학습 전용 설정만 바뀐 경우 (`epochs`, `lr`, `batch_size`, `dropout`, `mixup`, `ema`, 모델 hidden size 등)에는 일반적으로 DL 캐시 재생성이 필요 없다.
+- 확실히 캐시를 강제하고 싶을 때만 config에 `data.dl_cache.require: true` 를 둔다. 기본 auto 모드는 캐시가 없거나 일부 누락되면 기존 계산 경로로 fallback 한다.
+
 ---
 
 ## 6. 작업 습관 (Codex 행동 규칙)

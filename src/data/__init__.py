@@ -11,6 +11,14 @@ from .dataset import (
     fit_oes_normalizer,
     fit_proc_normalizer,
 )
+from .dl_cache import (
+    dl_normalized_cache_root,
+    dl_normalizer_cache_root,
+    dl_tensor_cache_root,
+    split_cache_tag,
+    tensor_cache_tag,
+    xgb_feature_tag,
+)
 from .loader import (
     DATASET_DIR,
     align_oes_to_process,
@@ -39,6 +47,9 @@ __all__ = [
     "build_sample_arrays",
     "cycle_indices_oes",
     "cycle_indices_proc",
+    "dl_normalized_cache_root",
+    "dl_normalizer_cache_root",
+    "dl_tensor_cache_root",
     "fit_oes_normalizer",
     "fit_proc_normalizer",
     "list_wafers",
@@ -46,6 +57,9 @@ __all__ = [
     "load_oes_wafer",
     "load_process_wafer",
     "segment_cycles_by_sf6",
+    "split_cache_tag",
+    "tensor_cache_tag",
     "trim_to_100_cycles",
     "wafer_key_to_experiment_key",
+    "xgb_feature_tag",
 ]

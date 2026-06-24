@@ -1,0 +1,112 @@
+# LOO-Lot validation of the current best model
+# (aux + mixup + EMA + 120ep no-early-stop).
+#
+# Cloned from exp_dl_multimodal_oes_aux_mixup_ema_longrun_5fold.yaml,
+# only split_file and limit_folds changed:
+#   split_file:    splits/kfold5_wafer.npz → splits/loo_lot.npz
+#   limit_folds:   5 → 10
+#
+# Motivation:
+#   Previous LOO-Lot run with aux-only (2026-05-27_16-06) gave R²=0.323±0.294.
+#   The current best model adds wafer-level mixup (which synthesizes cross-lot
+#   wafers) and EMA. Both could meaningfully improve lot-invariance:
+#   - mixup mixes wafers from different lots → encoder cannot use
+#     lot-identifying OES signatures as shortcuts to target
+#   - EMA smooths late-stage divergence on poorly-fit lots (some lots had
+#     best_ep=0 in the aux-only run — pure mean prediction)
+#
+#   This is the key thesis claim: "DL with proper augmentation generalizes
+#   across lots." Validating it requires this LOO-Lot run on the best model.
+#
+# DL cache note:
+#   split_file changed → kfold5 cache cannot be reused. Run
+#     .venv\Scripts\python.exe -m scripts.10_prepare_dl_cache \
+#       --config configs/exp_dl_lot_validation_aux_mixup_ema.yaml \
+#       --level normalizers
+#   before training to avoid recomputing fold normalizers from scratch each fold.
+#
+# Baseline to beat (aux-only LOO-Lot, 2026-05-27_16-06):
+#   aggregate R² = 0.323 ± 0.294
+#   worst lots: 3 (-0.19, best_ep=0), 5 (-0.01, best_ep=0)
+#   best lots:  0 (0.81), 1 (0.68)
+# Success criteria:
+#   aggregate R² ≥ 0.45 (mixup effective for lot-invariance)
+#   no lot with best_ep=0 (model trains on every lot)
+#   worst lot R² ≥ 0.0 (no negative-R² lots)
+
+experiment:
+  title: "dl lot validation aux mixup ema"
+  seed: 42
+  limit_folds: 10
+
+data:
+  cache_version: "v1"
+  split_file: "splits/loo_lot.npz"
+  spatial_features: ["X", "Y"]
+  targets: ["oxide_etch"]
+  modality: "multimodal"
+  t_o: 128
+  t_p: 30
+  oes_band_selection:
+    method: "correlation"
+    top_k: 256
+    stat: "late_mean"
+    late_start_cycle: 80
+    early_end_cycle: 20
+
+model:
+  name: "cycle_aware_bilstm"
+  params:
+    oes_encoder:
+      in_time: 128
+      in_channels: 256
+      out_dim: 128
+      base_channels: 16
+      n_blocks: 4
+      kernel_time: 3
+      kernel_chan: 9
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    proc_encoder:
+      in_time: 30
+      in_channels: 31
+      out_dim: 64
+      base_channels: 16
+      n_blocks: 3
+      kernel_time: 3
+      kernel_chan: 3
+      stride_time: 2
+      stride_chan: 2
+      dropout: 0.1
+    cycle_fusion_dim: 128
+    lstm_hidden: 128
+    lstm_layers: 1
+    lstm_dropout: 0.0
+    head_hidden: 128
+    head_dropout: 0.2
+    use_xy: true
+    xy_n_freqs: 6
+    xy_enc_dim: 64
+    use_film: true
+    pool: "mean"
+    aux_wafer_mean: true
+    aux_wafer_loss_weight: 0.3
+
+training:
+  epochs: 120
+  batch_size: 4
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  scheduler: "cosine"
+  early_stop_patience: 0      # disabled; best_state tracked every epoch
+  loss: "mse"
+  num_workers: 0
+  amp: false
+  mixup:
+    enabled: true
+    alpha: 0.2
+    prob: 1.0
+  ema:
+    enabled: true
+    decay: 0.999

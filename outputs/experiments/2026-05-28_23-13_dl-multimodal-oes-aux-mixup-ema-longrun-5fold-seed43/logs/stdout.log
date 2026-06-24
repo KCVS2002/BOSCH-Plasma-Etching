@@ -1,0 +1,679 @@
+Experiment dir: outputs\experiments\2026-05-28_23-13_dl-multimodal-oes-aux-mixup-ema-longrun-5fold-seed43
+Config: configs\_cache_dl_seed43.yaml
+Device: cuda  (CUDA=True)
+Cache: cache\v1  |  split: splits/kfold5_wafer_seed43.npz (StratifiedGroupKFold(n_splits=5, stratify=lot, group=wafer), running folds [0, 1, 2, 3, 4] of 5)
+DL cache auto mode resolved to: normalized
+DL cache mode: normalized  |  require=False
+  tensor cache: cache\v1\dl_tensors\to128_tp30_proc-common
+  normalizer cache: cache\v1\dl_normalizers\to128_tp30_proc-common\splits-kfold5_wafer_seed43\xgb-none
+  normalized cache: cache\v1\dl_normalized\to128_tp30_proc-common\splits-kfold5_wafer_seed43\pwnorm0\xgb-none
+Targets: ['oxide_etch']  |  modality: multimodal
+
+[setup] loading 88 wafers (one-time, shared across folds)...
+[setup] done in 0.0s  (discover=0.0 load=0.0)
+[setup] proc channels kept: 31
+[setup] XGB injection features: 0 (disabled)
+[setup] normalisation deferred to per-fold (no val leakage)
+
+=== Target: oxide_etch ===
+  -- fold 0 --
+    [seed] reset RNG for target/fold: 43
+    [fold-norm] loading normalized cache for fold 0...
+    [fold-norm] done via normalized-cache (8.9s)
+    target oxide_etch stats: mean=0.6588 std=0.0770
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=70
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.573, min selected |corr|=0.323, 0.0s)
+    [aux] wafer-mean aux head ENABLED, weight=0.3
+    [mixup] ENABLED  alpha=0.2  prob=1.0
+    [ema] ENABLED  decay=0.999  validates on shadow weights
+    [early-stop] DISABLED (patience=0). Will run full 120 epochs.
+    ep   0 (3.7s): train_loss=0.9355 train_rmse=0.0744 val_rmse=0.0778 val_r2=0.0217 val_mape=9.67%
+    ep   1 (2.7s): train_loss=0.8756 train_rmse=0.0720 val_rmse=0.0770 val_r2=0.0419 val_mape=9.53%
+    ep   2 (2.7s): train_loss=0.8789 train_rmse=0.0721 val_rmse=0.0739 val_r2=0.1162 val_mape=8.95%
+    ep   3 (2.7s): train_loss=0.8765 train_rmse=0.0720 val_rmse=0.0725 val_r2=0.1509 val_mape=8.75%
+    ep   4 (2.7s): train_loss=0.8216 train_rmse=0.0698 val_rmse=0.0722 val_r2=0.1579 val_mape=8.77%
+    ep   5 (2.7s): train_loss=0.7596 train_rmse=0.0671 val_rmse=0.0722 val_r2=0.1559 val_mape=8.75%
+    ep   6 (2.7s): train_loss=0.7806 train_rmse=0.0680 val_rmse=0.0722 val_r2=0.1571 val_mape=8.70%
+    ep   7 (2.6s): train_loss=0.7533 train_rmse=0.0668 val_rmse=0.0730 val_r2=0.1392 val_mape=8.65%
+    ep   8 (2.6s): train_loss=0.7916 train_rmse=0.0685 val_rmse=0.0712 val_r2=0.1798 val_mape=8.45%
+    ep   9 (2.6s): train_loss=0.8140 train_rmse=0.0694 val_rmse=0.0694 val_r2=0.2207 val_mape=8.12%
+    ep  10 (2.6s): train_loss=0.7647 train_rmse=0.0673 val_rmse=0.0684 val_r2=0.2433 val_mape=7.86%
+    ep  11 (2.6s): train_loss=0.7064 train_rmse=0.0647 val_rmse=0.0685 val_r2=0.2408 val_mape=7.81%
+    ep  12 (2.9s): train_loss=0.7545 train_rmse=0.0668 val_rmse=0.0708 val_r2=0.1883 val_mape=8.04%
+    ep  13 (2.8s): train_loss=0.6914 train_rmse=0.0640 val_rmse=0.0700 val_r2=0.2081 val_mape=7.51%
+    ep  14 (2.7s): train_loss=0.6849 train_rmse=0.0637 val_rmse=0.0713 val_r2=0.1773 val_mape=7.23%
+    ep  15 (2.7s): train_loss=0.6165 train_rmse=0.0604 val_rmse=0.0734 val_r2=0.1277 val_mape=7.90%
+    ep  16 (2.8s): train_loss=0.5654 train_rmse=0.0579 val_rmse=0.0715 val_r2=0.1723 val_mape=7.36%
+    ep  17 (2.8s): train_loss=0.6516 train_rmse=0.0621 val_rmse=0.0736 val_r2=0.1233 val_mape=6.73%
+    ep  18 (2.7s): train_loss=0.6229 train_rmse=0.0607 val_rmse=0.0725 val_r2=0.1509 val_mape=7.89%
+    ep  19 (2.7s): train_loss=0.5750 train_rmse=0.0584 val_rmse=0.0788 val_r2=-0.0037 val_mape=8.85%
+    ep  20 (2.7s): train_loss=0.5792 train_rmse=0.0586 val_rmse=0.0714 val_r2=0.1755 val_mape=7.61%
+    ep  21 (2.7s): train_loss=0.6834 train_rmse=0.0636 val_rmse=0.0712 val_r2=0.1792 val_mape=6.47%
+    ep  22 (2.7s): train_loss=0.7007 train_rmse=0.0644 val_rmse=0.0706 val_r2=0.1936 val_mape=6.58%
+    ep  23 (2.7s): train_loss=0.5989 train_rmse=0.0596 val_rmse=0.0713 val_r2=0.1788 val_mape=7.19%
+    ep  24 (2.7s): train_loss=0.6437 train_rmse=0.0617 val_rmse=0.0724 val_r2=0.1515 val_mape=6.38%
+    ep  25 (2.7s): train_loss=0.5271 train_rmse=0.0559 val_rmse=0.0702 val_r2=0.2021 val_mape=6.95%
+    ep  26 (2.7s): train_loss=0.6193 train_rmse=0.0606 val_rmse=0.0776 val_r2=0.0255 val_mape=6.50%
+    ep  27 (2.7s): train_loss=0.5703 train_rmse=0.0581 val_rmse=0.0823 val_r2=-0.0964 val_mape=6.78%
+    ep  28 (2.7s): train_loss=0.5788 train_rmse=0.0585 val_rmse=0.0761 val_r2=0.0631 val_mape=6.55%
+    ep  29 (2.7s): train_loss=0.6009 train_rmse=0.0596 val_rmse=0.0713 val_r2=0.1767 val_mape=7.35%
+    ep  30 (2.7s): train_loss=0.5559 train_rmse=0.0574 val_rmse=0.0738 val_r2=0.1184 val_mape=7.85%
+    ep  31 (2.7s): train_loss=0.5704 train_rmse=0.0581 val_rmse=0.0725 val_r2=0.1500 val_mape=7.60%
+    ep  32 (2.7s): train_loss=0.5206 train_rmse=0.0555 val_rmse=0.0717 val_r2=0.1677 val_mape=7.36%
+    ep  33 (2.8s): train_loss=0.6241 train_rmse=0.0608 val_rmse=0.0712 val_r2=0.1793 val_mape=7.28%
+    ep  34 (2.9s): train_loss=0.5418 train_rmse=0.0566 val_rmse=0.0709 val_r2=0.1871 val_mape=6.61%
+    ep  35 (2.8s): train_loss=0.5312 train_rmse=0.0561 val_rmse=0.0749 val_r2=0.0935 val_mape=6.38%
+    ep  36 (2.9s): train_loss=0.5489 train_rmse=0.0570 val_rmse=0.0752 val_r2=0.0854 val_mape=6.33%
+    ep  37 (3.0s): train_loss=0.6444 train_rmse=0.0618 val_rmse=0.0754 val_r2=0.0795 val_mape=6.28%
+    ep  38 (2.8s): train_loss=0.5977 train_rmse=0.0595 val_rmse=0.0720 val_r2=0.1605 val_mape=6.55%
+    ep  39 (2.8s): train_loss=0.5150 train_rmse=0.0552 val_rmse=0.0689 val_r2=0.2314 val_mape=6.94%
+    ep  40 (2.7s): train_loss=0.5515 train_rmse=0.0571 val_rmse=0.0700 val_r2=0.2064 val_mape=7.11%
+    ep  41 (2.7s): train_loss=0.5062 train_rmse=0.0547 val_rmse=0.0697 val_r2=0.2142 val_mape=7.01%
+    ep  42 (2.7s): train_loss=0.5101 train_rmse=0.0550 val_rmse=0.0678 val_r2=0.2574 val_mape=6.78%
+    ep  43 (2.7s): train_loss=0.4905 train_rmse=0.0539 val_rmse=0.0686 val_r2=0.2392 val_mape=6.77%
+    ep  44 (2.7s): train_loss=0.4262 train_rmse=0.0502 val_rmse=0.0682 val_r2=0.2480 val_mape=6.81%
+    ep  45 (2.7s): train_loss=0.4681 train_rmse=0.0527 val_rmse=0.0693 val_r2=0.2237 val_mape=6.96%
+    ep  46 (2.7s): train_loss=0.4237 train_rmse=0.0501 val_rmse=0.0677 val_r2=0.2580 val_mape=6.80%
+    ep  47 (2.7s): train_loss=0.3841 train_rmse=0.0477 val_rmse=0.0686 val_r2=0.2391 val_mape=6.80%
+    ep  48 (2.7s): train_loss=0.5144 train_rmse=0.0552 val_rmse=0.0693 val_r2=0.2228 val_mape=6.93%
+    ep  49 (2.7s): train_loss=0.4067 train_rmse=0.0491 val_rmse=0.0699 val_r2=0.2105 val_mape=6.89%
+    ep  50 (2.7s): train_loss=0.4406 train_rmse=0.0511 val_rmse=0.0738 val_r2=0.1182 val_mape=6.27%
+    ep  51 (2.7s): train_loss=0.4617 train_rmse=0.0523 val_rmse=0.0792 val_r2=-0.0152 val_mape=6.36%
+    ep  52 (2.7s): train_loss=0.5070 train_rmse=0.0548 val_rmse=0.0827 val_r2=-0.1068 val_mape=6.59%
+    ep  53 (2.7s): train_loss=0.4796 train_rmse=0.0533 val_rmse=0.0818 val_r2=-0.0816 val_mape=6.58%
+    ep  54 (2.8s): train_loss=0.3906 train_rmse=0.0481 val_rmse=0.0784 val_r2=0.0052 val_mape=6.54%
+    ep  55 (2.8s): train_loss=0.3423 train_rmse=0.0450 val_rmse=0.0767 val_r2=0.0488 val_mape=6.89%
+    ep  56 (2.8s): train_loss=0.3793 train_rmse=0.0474 val_rmse=0.0705 val_r2=0.1952 val_mape=7.06%
+    ep  57 (2.8s): train_loss=0.3960 train_rmse=0.0484 val_rmse=0.0707 val_r2=0.1925 val_mape=7.11%
+    ep  58 (2.8s): train_loss=0.4522 train_rmse=0.0517 val_rmse=0.0719 val_r2=0.1642 val_mape=7.43%
+    ep  59 (2.8s): train_loss=0.4008 train_rmse=0.0487 val_rmse=0.0701 val_r2=0.2059 val_mape=7.07%
+    ep  60 (2.8s): train_loss=0.4912 train_rmse=0.0539 val_rmse=0.0726 val_r2=0.1469 val_mape=6.70%
+    ep  61 (2.8s): train_loss=0.3833 train_rmse=0.0476 val_rmse=0.0749 val_r2=0.0915 val_mape=6.50%
+    ep  62 (2.7s): train_loss=0.3461 train_rmse=0.0453 val_rmse=0.0773 val_r2=0.0328 val_mape=6.25%
+    ep  63 (2.7s): train_loss=0.3461 train_rmse=0.0453 val_rmse=0.0779 val_r2=0.0187 val_mape=6.21%
+    ep  64 (3.1s): train_loss=0.3802 train_rmse=0.0474 val_rmse=0.0845 val_r2=-0.1540 val_mape=6.62%
+    ep  65 (2.9s): train_loss=0.3429 train_rmse=0.0451 val_rmse=0.0807 val_r2=-0.0545 val_mape=6.29%
+    ep  66 (2.9s): train_loss=0.2927 train_rmse=0.0416 val_rmse=0.0749 val_r2=0.0915 val_mape=6.18%
+    ep  67 (2.9s): train_loss=0.3584 train_rmse=0.0461 val_rmse=0.0715 val_r2=0.1741 val_mape=6.49%
+    ep  68 (3.0s): train_loss=0.3062 train_rmse=0.0426 val_rmse=0.0711 val_r2=0.1834 val_mape=6.53%
+    ep  69 (2.9s): train_loss=0.3354 train_rmse=0.0446 val_rmse=0.0715 val_r2=0.1737 val_mape=6.55%
+    ep  70 (2.9s): train_loss=0.3391 train_rmse=0.0448 val_rmse=0.0750 val_r2=0.0910 val_mape=6.49%
+    ep  71 (2.9s): train_loss=0.4005 train_rmse=0.0487 val_rmse=0.0748 val_r2=0.0955 val_mape=6.51%
+    ep  72 (2.9s): train_loss=0.3354 train_rmse=0.0446 val_rmse=0.0753 val_r2=0.0830 val_mape=6.36%
+    ep  73 (2.9s): train_loss=0.3032 train_rmse=0.0424 val_rmse=0.0751 val_r2=0.0869 val_mape=6.39%
+    ep  74 (2.9s): train_loss=0.3162 train_rmse=0.0433 val_rmse=0.0750 val_r2=0.0900 val_mape=6.29%
+    ep  75 (3.0s): train_loss=0.3575 train_rmse=0.0460 val_rmse=0.0757 val_r2=0.0731 val_mape=6.11%
+    ep  76 (3.0s): train_loss=0.3584 train_rmse=0.0461 val_rmse=0.0747 val_r2=0.0976 val_mape=6.25%
+    ep  77 (3.0s): train_loss=0.2934 train_rmse=0.0417 val_rmse=0.0749 val_r2=0.0926 val_mape=6.12%
+    ep  78 (3.0s): train_loss=0.3264 train_rmse=0.0440 val_rmse=0.0758 val_r2=0.0698 val_mape=5.94%
+    ep  79 (3.0s): train_loss=0.3195 train_rmse=0.0435 val_rmse=0.0762 val_r2=0.0606 val_mape=5.98%
+    ep  80 (3.0s): train_loss=0.3364 train_rmse=0.0446 val_rmse=0.0727 val_r2=0.1447 val_mape=6.18%
+    ep  81 (3.0s): train_loss=0.3321 train_rmse=0.0443 val_rmse=0.0744 val_r2=0.1044 val_mape=6.05%
+    ep  82 (3.0s): train_loss=0.2775 train_rmse=0.0405 val_rmse=0.0737 val_r2=0.1208 val_mape=6.19%
+    ep  83 (3.1s): train_loss=0.2848 train_rmse=0.0411 val_rmse=0.0672 val_r2=0.2695 val_mape=6.34%
+    ep  84 (2.7s): train_loss=0.2922 train_rmse=0.0416 val_rmse=0.0644 val_r2=0.3287 val_mape=6.35%
+    ep  85 (2.7s): train_loss=0.2804 train_rmse=0.0407 val_rmse=0.0644 val_r2=0.3295 val_mape=6.37%
+    ep  86 (2.7s): train_loss=0.3135 train_rmse=0.0431 val_rmse=0.0642 val_r2=0.3324 val_mape=6.39%
+    ep  87 (2.7s): train_loss=0.3396 train_rmse=0.0448 val_rmse=0.0649 val_r2=0.3198 val_mape=6.34%
+    ep  88 (2.7s): train_loss=0.3250 train_rmse=0.0439 val_rmse=0.0678 val_r2=0.2556 val_mape=6.29%
+    ep  89 (2.7s): train_loss=0.2760 train_rmse=0.0404 val_rmse=0.0682 val_r2=0.2470 val_mape=6.37%
+    ep  90 (2.7s): train_loss=0.3148 train_rmse=0.0432 val_rmse=0.0679 val_r2=0.2538 val_mape=6.30%
+    ep  91 (2.7s): train_loss=0.2994 train_rmse=0.0421 val_rmse=0.0679 val_r2=0.2550 val_mape=6.26%
+    ep  92 (2.7s): train_loss=0.3047 train_rmse=0.0425 val_rmse=0.0662 val_r2=0.2909 val_mape=6.30%
+    ep  93 (2.8s): train_loss=0.2626 train_rmse=0.0394 val_rmse=0.0658 val_r2=0.2993 val_mape=6.30%
+    ep  94 (3.0s): train_loss=0.2973 train_rmse=0.0420 val_rmse=0.0657 val_r2=0.3027 val_mape=6.29%
+    ep  95 (3.0s): train_loss=0.2940 train_rmse=0.0417 val_rmse=0.0673 val_r2=0.2670 val_mape=6.24%
+    ep  96 (2.8s): train_loss=0.2762 train_rmse=0.0404 val_rmse=0.0672 val_r2=0.2704 val_mape=6.23%
+    ep  97 (2.8s): train_loss=0.3202 train_rmse=0.0435 val_rmse=0.0655 val_r2=0.3059 val_mape=6.24%
+    ep  98 (2.8s): train_loss=0.2954 train_rmse=0.0418 val_rmse=0.0681 val_r2=0.2493 val_mape=6.11%
+    ep  99 (2.7s): train_loss=0.3157 train_rmse=0.0432 val_rmse=0.0660 val_r2=0.2950 val_mape=6.17%
+    ep 100 (2.8s): train_loss=0.3119 train_rmse=0.0430 val_rmse=0.0679 val_r2=0.2539 val_mape=6.21%
+    ep 101 (2.7s): train_loss=0.2862 train_rmse=0.0412 val_rmse=0.0687 val_r2=0.2357 val_mape=6.17%
+    ep 102 (2.7s): train_loss=0.2706 train_rmse=0.0400 val_rmse=0.0696 val_r2=0.2158 val_mape=6.18%
+    ep 103 (2.7s): train_loss=0.2852 train_rmse=0.0411 val_rmse=0.0688 val_r2=0.2355 val_mape=6.19%
+    ep 104 (2.7s): train_loss=0.2648 train_rmse=0.0396 val_rmse=0.0675 val_r2=0.2640 val_mape=6.14%
+    ep 105 (2.8s): train_loss=0.2818 train_rmse=0.0409 val_rmse=0.0676 val_r2=0.2619 val_mape=6.13%
+    ep 106 (2.7s): train_loss=0.2714 train_rmse=0.0401 val_rmse=0.0658 val_r2=0.2999 val_mape=6.07%
+    ep 107 (2.7s): train_loss=0.3054 train_rmse=0.0425 val_rmse=0.0656 val_r2=0.3036 val_mape=6.08%
+    ep 108 (2.7s): train_loss=0.2897 train_rmse=0.0414 val_rmse=0.0654 val_r2=0.3073 val_mape=6.07%
+    ep 109 (2.7s): train_loss=0.2866 train_rmse=0.0412 val_rmse=0.0651 val_r2=0.3156 val_mape=6.07%
+    ep 110 (2.8s): train_loss=0.2885 train_rmse=0.0413 val_rmse=0.0652 val_r2=0.3134 val_mape=6.08%
+    ep 111 (2.7s): train_loss=0.2571 train_rmse=0.0390 val_rmse=0.0653 val_r2=0.3106 val_mape=6.05%
+    ep 112 (2.7s): train_loss=0.3308 train_rmse=0.0443 val_rmse=0.0645 val_r2=0.3268 val_mape=6.19%
+    ep 113 (2.7s): train_loss=0.2722 train_rmse=0.0402 val_rmse=0.0648 val_r2=0.3208 val_mape=6.11%
+    ep 114 (2.7s): train_loss=0.2721 train_rmse=0.0401 val_rmse=0.0655 val_r2=0.3069 val_mape=6.04%
+    ep 115 (2.7s): train_loss=0.2880 train_rmse=0.0413 val_rmse=0.0651 val_r2=0.3140 val_mape=6.03%
+    ep 116 (2.8s): train_loss=0.2817 train_rmse=0.0408 val_rmse=0.0645 val_r2=0.3263 val_mape=6.08%
+    ep 117 (2.8s): train_loss=0.3107 train_rmse=0.0429 val_rmse=0.0647 val_r2=0.3236 val_mape=6.14%
+    ep 118 (2.8s): train_loss=0.2805 train_rmse=0.0408 val_rmse=0.0645 val_r2=0.3273 val_mape=6.13%
+    ep 119 (2.7s): train_loss=0.2742 train_rmse=0.0403 val_rmse=0.0647 val_r2=0.3222 val_mape=6.04%
+    final: rmse=0.0642  mae=0.0394  r2=0.3324  mape=6.39%  (344.9s, best_ep=86)
+  -- fold 1 --
+    [seed] reset RNG for target/fold: 44
+    [fold-norm] loading normalized cache for fold 1...
+    [fold-norm] done via normalized-cache (10.2s)
+    target oxide_etch stats: mean=0.6577 std=0.0774
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=71
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.577, min selected |corr|=0.342, 0.0s)
+    [aux] wafer-mean aux head ENABLED, weight=0.3
+    [mixup] ENABLED  alpha=0.2  prob=1.0
+    [ema] ENABLED  decay=0.999  validates on shadow weights
+    [early-stop] DISABLED (patience=0). Will run full 120 epochs.
+    ep   0 (3.2s): train_loss=0.9268 train_rmse=0.0745 val_rmse=0.0744 val_r2=0.0669 val_mape=9.05%
+    ep   1 (2.8s): train_loss=0.7325 train_rmse=0.0662 val_rmse=0.0652 val_r2=0.2821 val_mape=7.98%
+    ep   2 (2.8s): train_loss=0.7243 train_rmse=0.0659 val_rmse=0.0641 val_r2=0.3063 val_mape=7.73%
+    ep   3 (2.7s): train_loss=0.6997 train_rmse=0.0647 val_rmse=0.0628 val_r2=0.3349 val_mape=7.59%
+    ep   4 (2.7s): train_loss=0.7002 train_rmse=0.0647 val_rmse=0.0617 val_r2=0.3584 val_mape=7.38%
+    ep   5 (2.7s): train_loss=0.6173 train_rmse=0.0608 val_rmse=0.0608 val_r2=0.3765 val_mape=7.17%
+    ep   6 (2.7s): train_loss=0.5896 train_rmse=0.0594 val_rmse=0.0580 val_r2=0.4318 val_mape=6.68%
+    ep   7 (2.7s): train_loss=0.5154 train_rmse=0.0555 val_rmse=0.0550 val_r2=0.4893 val_mape=6.12%
+    ep   8 (2.7s): train_loss=0.4563 train_rmse=0.0523 val_rmse=0.0543 val_r2=0.5017 val_mape=5.81%
+    ep   9 (2.7s): train_loss=0.5020 train_rmse=0.0548 val_rmse=0.0558 val_r2=0.4755 val_mape=5.74%
+    ep  10 (2.8s): train_loss=0.5649 train_rmse=0.0582 val_rmse=0.0557 val_r2=0.4775 val_mape=5.55%
+    ep  11 (2.8s): train_loss=0.5455 train_rmse=0.0572 val_rmse=0.0528 val_r2=0.5296 val_mape=5.47%
+    ep  12 (2.8s): train_loss=0.5343 train_rmse=0.0566 val_rmse=0.0524 val_r2=0.5371 val_mape=5.31%
+    ep  13 (2.7s): train_loss=0.4292 train_rmse=0.0507 val_rmse=0.0526 val_r2=0.5327 val_mape=5.34%
+    ep  14 (2.7s): train_loss=0.4270 train_rmse=0.0506 val_rmse=0.0511 val_r2=0.5593 val_mape=5.10%
+    ep  15 (2.7s): train_loss=0.3967 train_rmse=0.0487 val_rmse=0.0506 val_r2=0.5689 val_mape=5.00%
+    ep  16 (2.7s): train_loss=0.3915 train_rmse=0.0484 val_rmse=0.0506 val_r2=0.5680 val_mape=4.96%
+    ep  17 (2.8s): train_loss=0.4255 train_rmse=0.0505 val_rmse=0.0499 val_r2=0.5801 val_mape=4.82%
+    ep  18 (2.8s): train_loss=0.3624 train_rmse=0.0466 val_rmse=0.0499 val_r2=0.5804 val_mape=4.80%
+    ep  19 (2.9s): train_loss=0.3996 train_rmse=0.0489 val_rmse=0.0484 val_r2=0.6047 val_mape=4.55%
+    ep  20 (2.9s): train_loss=0.3589 train_rmse=0.0464 val_rmse=0.0478 val_r2=0.6148 val_mape=4.44%
+    ep  21 (2.8s): train_loss=0.3313 train_rmse=0.0445 val_rmse=0.0474 val_r2=0.6209 val_mape=4.36%
+    ep  22 (2.7s): train_loss=0.3625 train_rmse=0.0466 val_rmse=0.0472 val_r2=0.6235 val_mape=4.31%
+    ep  23 (2.7s): train_loss=0.3509 train_rmse=0.0458 val_rmse=0.0471 val_r2=0.6263 val_mape=4.26%
+    ep  24 (2.7s): train_loss=0.3913 train_rmse=0.0484 val_rmse=0.0467 val_r2=0.6316 val_mape=4.23%
+    ep  25 (2.7s): train_loss=0.3646 train_rmse=0.0467 val_rmse=0.0467 val_r2=0.6318 val_mape=4.21%
+    ep  26 (2.7s): train_loss=0.3147 train_rmse=0.0434 val_rmse=0.0477 val_r2=0.6167 val_mape=4.31%
+    ep  27 (2.7s): train_loss=0.3007 train_rmse=0.0424 val_rmse=0.0460 val_r2=0.6424 val_mape=4.12%
+    ep  28 (2.7s): train_loss=0.3409 train_rmse=0.0452 val_rmse=0.0460 val_r2=0.6432 val_mape=4.10%
+    ep  29 (2.7s): train_loss=0.3160 train_rmse=0.0435 val_rmse=0.0452 val_r2=0.6551 val_mape=4.05%
+    ep  30 (2.7s): train_loss=0.3095 train_rmse=0.0431 val_rmse=0.0449 val_r2=0.6597 val_mape=4.07%
+    ep  31 (2.7s): train_loss=0.3226 train_rmse=0.0439 val_rmse=0.0445 val_r2=0.6659 val_mape=3.97%
+    ep  32 (2.7s): train_loss=0.3122 train_rmse=0.0432 val_rmse=0.0444 val_r2=0.6673 val_mape=3.93%
+    ep  33 (2.7s): train_loss=0.3387 train_rmse=0.0450 val_rmse=0.0450 val_r2=0.6591 val_mape=3.90%
+    ep  34 (2.7s): train_loss=0.3482 train_rmse=0.0457 val_rmse=0.0446 val_r2=0.6644 val_mape=3.87%
+    ep  35 (2.8s): train_loss=0.3185 train_rmse=0.0437 val_rmse=0.0446 val_r2=0.6641 val_mape=3.86%
+    ep  36 (2.7s): train_loss=0.2656 train_rmse=0.0399 val_rmse=0.0446 val_r2=0.6649 val_mape=3.87%
+    ep  37 (2.7s): train_loss=0.2759 train_rmse=0.0406 val_rmse=0.0440 val_r2=0.6730 val_mape=3.80%
+    ep  38 (2.7s): train_loss=0.2821 train_rmse=0.0411 val_rmse=0.0435 val_r2=0.6802 val_mape=3.73%
+    ep  39 (2.8s): train_loss=0.3363 train_rmse=0.0449 val_rmse=0.0430 val_r2=0.6888 val_mape=3.64%
+    ep  40 (2.8s): train_loss=0.3156 train_rmse=0.0435 val_rmse=0.0429 val_r2=0.6889 val_mape=3.66%
+    ep  41 (2.7s): train_loss=0.2879 train_rmse=0.0415 val_rmse=0.0424 val_r2=0.6966 val_mape=3.58%
+    ep  42 (2.7s): train_loss=0.3014 train_rmse=0.0425 val_rmse=0.0426 val_r2=0.6931 val_mape=3.61%
+    ep  43 (2.7s): train_loss=0.2784 train_rmse=0.0408 val_rmse=0.0424 val_r2=0.6972 val_mape=3.57%
+    ep  44 (2.8s): train_loss=0.2692 train_rmse=0.0401 val_rmse=0.0427 val_r2=0.6925 val_mape=3.58%
+    ep  45 (2.8s): train_loss=0.2523 train_rmse=0.0389 val_rmse=0.0424 val_r2=0.6972 val_mape=3.53%
+    ep  46 (2.7s): train_loss=0.2643 train_rmse=0.0398 val_rmse=0.0420 val_r2=0.7021 val_mape=3.47%
+    ep  47 (2.7s): train_loss=0.2816 train_rmse=0.0411 val_rmse=0.0422 val_r2=0.6991 val_mape=3.48%
+    ep  48 (2.7s): train_loss=0.2456 train_rmse=0.0383 val_rmse=0.0420 val_r2=0.7017 val_mape=3.44%
+    ep  49 (2.7s): train_loss=0.2640 train_rmse=0.0398 val_rmse=0.0416 val_r2=0.7077 val_mape=3.40%
+    ep  50 (2.7s): train_loss=0.2509 train_rmse=0.0388 val_rmse=0.0416 val_r2=0.7078 val_mape=3.41%
+    ep  51 (2.8s): train_loss=0.2800 train_rmse=0.0409 val_rmse=0.0411 val_r2=0.7153 val_mape=3.34%
+    ep  52 (2.8s): train_loss=0.2953 train_rmse=0.0421 val_rmse=0.0417 val_r2=0.7069 val_mape=3.42%
+    ep  53 (2.8s): train_loss=0.2702 train_rmse=0.0402 val_rmse=0.0414 val_r2=0.7112 val_mape=3.43%
+    ep  54 (2.8s): train_loss=0.2818 train_rmse=0.0411 val_rmse=0.0414 val_r2=0.7110 val_mape=3.39%
+    ep  55 (2.9s): train_loss=0.2605 train_rmse=0.0395 val_rmse=0.0416 val_r2=0.7087 val_mape=3.41%
+    ep  56 (2.9s): train_loss=0.2381 train_rmse=0.0378 val_rmse=0.0418 val_r2=0.7058 val_mape=3.49%
+    ep  57 (2.7s): train_loss=0.2005 train_rmse=0.0347 val_rmse=0.0416 val_r2=0.7087 val_mape=3.46%
+    ep  58 (2.8s): train_loss=0.2525 train_rmse=0.0389 val_rmse=0.0414 val_r2=0.7107 val_mape=3.45%
+    ep  59 (2.8s): train_loss=0.2273 train_rmse=0.0369 val_rmse=0.0414 val_r2=0.7103 val_mape=3.43%
+    ep  60 (2.7s): train_loss=0.2317 train_rmse=0.0372 val_rmse=0.0410 val_r2=0.7166 val_mape=3.34%
+    ep  61 (2.7s): train_loss=0.2336 train_rmse=0.0374 val_rmse=0.0413 val_r2=0.7126 val_mape=3.37%
+    ep  62 (2.7s): train_loss=0.2285 train_rmse=0.0370 val_rmse=0.0414 val_r2=0.7115 val_mape=3.38%
+    ep  63 (2.7s): train_loss=0.2429 train_rmse=0.0381 val_rmse=0.0404 val_r2=0.7245 val_mape=3.27%
+    ep  64 (2.7s): train_loss=0.2153 train_rmse=0.0359 val_rmse=0.0401 val_r2=0.7293 val_mape=3.21%
+    ep  65 (2.7s): train_loss=0.2363 train_rmse=0.0376 val_rmse=0.0394 val_r2=0.7387 val_mape=3.14%
+    ep  66 (2.7s): train_loss=0.2282 train_rmse=0.0370 val_rmse=0.0394 val_r2=0.7379 val_mape=3.14%
+    ep  67 (2.7s): train_loss=0.2481 train_rmse=0.0385 val_rmse=0.0408 val_r2=0.7189 val_mape=3.28%
+    ep  68 (2.7s): train_loss=0.2500 train_rmse=0.0387 val_rmse=0.0410 val_r2=0.7163 val_mape=3.28%
+    ep  69 (2.7s): train_loss=0.2300 train_rmse=0.0371 val_rmse=0.0400 val_r2=0.7301 val_mape=3.20%
+    ep  70 (2.7s): train_loss=0.2352 train_rmse=0.0375 val_rmse=0.0396 val_r2=0.7354 val_mape=3.16%
+    ep  71 (2.7s): train_loss=0.2244 train_rmse=0.0367 val_rmse=0.0389 val_r2=0.7452 val_mape=3.11%
+    ep  72 (2.7s): train_loss=0.2407 train_rmse=0.0380 val_rmse=0.0390 val_r2=0.7432 val_mape=3.19%
+    ep  73 (2.7s): train_loss=0.2255 train_rmse=0.0367 val_rmse=0.0392 val_r2=0.7414 val_mape=3.22%
+    ep  74 (2.7s): train_loss=0.2247 train_rmse=0.0367 val_rmse=0.0396 val_r2=0.7354 val_mape=3.32%
+    ep  75 (2.7s): train_loss=0.2252 train_rmse=0.0367 val_rmse=0.0395 val_r2=0.7374 val_mape=3.29%
+    ep  76 (2.7s): train_loss=0.2229 train_rmse=0.0365 val_rmse=0.0396 val_r2=0.7355 val_mape=3.23%
+    ep  77 (2.7s): train_loss=0.2298 train_rmse=0.0371 val_rmse=0.0393 val_r2=0.7394 val_mape=3.16%
+    ep  78 (2.7s): train_loss=0.2140 train_rmse=0.0358 val_rmse=0.0393 val_r2=0.7399 val_mape=3.17%
+    ep  79 (2.7s): train_loss=0.2197 train_rmse=0.0363 val_rmse=0.0392 val_r2=0.7406 val_mape=3.16%
+    ep  80 (2.7s): train_loss=0.2039 train_rmse=0.0349 val_rmse=0.0396 val_r2=0.7358 val_mape=3.23%
+    ep  81 (2.7s): train_loss=0.2415 train_rmse=0.0380 val_rmse=0.0396 val_r2=0.7352 val_mape=3.25%
+    ep  82 (2.7s): train_loss=0.1989 train_rmse=0.0345 val_rmse=0.0398 val_r2=0.7326 val_mape=3.29%
+    ep  83 (2.7s): train_loss=0.2256 train_rmse=0.0368 val_rmse=0.0401 val_r2=0.7291 val_mape=3.30%
+    ep  84 (2.7s): train_loss=0.2299 train_rmse=0.0371 val_rmse=0.0404 val_r2=0.7248 val_mape=3.34%
+    ep  85 (2.7s): train_loss=0.2019 train_rmse=0.0348 val_rmse=0.0404 val_r2=0.7242 val_mape=3.37%
+    ep  86 (2.7s): train_loss=0.2367 train_rmse=0.0376 val_rmse=0.0418 val_r2=0.7059 val_mape=3.54%
+    ep  87 (2.7s): train_loss=0.2188 train_rmse=0.0362 val_rmse=0.0421 val_r2=0.7008 val_mape=3.53%
+    ep  88 (2.7s): train_loss=0.2000 train_rmse=0.0346 val_rmse=0.0409 val_r2=0.7184 val_mape=3.44%
+    ep  89 (2.7s): train_loss=0.1955 train_rmse=0.0342 val_rmse=0.0407 val_r2=0.7210 val_mape=3.39%
+    ep  90 (2.7s): train_loss=0.2314 train_rmse=0.0372 val_rmse=0.0402 val_r2=0.7269 val_mape=3.35%
+    ep  91 (2.7s): train_loss=0.1911 train_rmse=0.0338 val_rmse=0.0402 val_r2=0.7278 val_mape=3.35%
+    ep  92 (2.7s): train_loss=0.1915 train_rmse=0.0339 val_rmse=0.0393 val_r2=0.7393 val_mape=3.22%
+    ep  93 (2.8s): train_loss=0.1988 train_rmse=0.0345 val_rmse=0.0392 val_r2=0.7402 val_mape=3.21%
+    ep  94 (2.8s): train_loss=0.2423 train_rmse=0.0381 val_rmse=0.0393 val_r2=0.7398 val_mape=3.22%
+    ep  95 (2.8s): train_loss=0.1819 train_rmse=0.0330 val_rmse=0.0397 val_r2=0.7343 val_mape=3.27%
+    ep  96 (2.9s): train_loss=0.1997 train_rmse=0.0346 val_rmse=0.0395 val_r2=0.7374 val_mape=3.24%
+    ep  97 (2.9s): train_loss=0.2041 train_rmse=0.0350 val_rmse=0.0393 val_r2=0.7388 val_mape=3.22%
+    ep  98 (3.0s): train_loss=0.1967 train_rmse=0.0343 val_rmse=0.0395 val_r2=0.7368 val_mape=3.23%
+    ep  99 (2.9s): train_loss=0.2020 train_rmse=0.0348 val_rmse=0.0394 val_r2=0.7378 val_mape=3.24%
+    ep 100 (2.8s): train_loss=0.1897 train_rmse=0.0337 val_rmse=0.0393 val_r2=0.7392 val_mape=3.22%
+    ep 101 (2.9s): train_loss=0.1848 train_rmse=0.0333 val_rmse=0.0398 val_r2=0.7330 val_mape=3.29%
+    ep 102 (2.8s): train_loss=0.2203 train_rmse=0.0363 val_rmse=0.0398 val_r2=0.7327 val_mape=3.28%
+    ep 103 (2.8s): train_loss=0.1810 train_rmse=0.0329 val_rmse=0.0395 val_r2=0.7370 val_mape=3.25%
+    ep 104 (2.8s): train_loss=0.1839 train_rmse=0.0332 val_rmse=0.0394 val_r2=0.7376 val_mape=3.23%
+    ep 105 (2.8s): train_loss=0.1667 train_rmse=0.0316 val_rmse=0.0394 val_r2=0.7375 val_mape=3.22%
+    ep 106 (2.9s): train_loss=0.1819 train_rmse=0.0330 val_rmse=0.0397 val_r2=0.7340 val_mape=3.22%
+    ep 107 (2.9s): train_loss=0.1806 train_rmse=0.0329 val_rmse=0.0397 val_r2=0.7340 val_mape=3.23%
+    ep 108 (2.8s): train_loss=0.1786 train_rmse=0.0327 val_rmse=0.0394 val_r2=0.7381 val_mape=3.20%
+    ep 109 (3.0s): train_loss=0.1815 train_rmse=0.0330 val_rmse=0.0393 val_r2=0.7399 val_mape=3.19%
+    ep 110 (2.9s): train_loss=0.1697 train_rmse=0.0319 val_rmse=0.0395 val_r2=0.7365 val_mape=3.20%
+    ep 111 (2.9s): train_loss=0.1764 train_rmse=0.0325 val_rmse=0.0395 val_r2=0.7366 val_mape=3.19%
+    ep 112 (3.0s): train_loss=0.1927 train_rmse=0.0340 val_rmse=0.0403 val_r2=0.7266 val_mape=3.23%
+    ep 113 (2.8s): train_loss=0.1815 train_rmse=0.0330 val_rmse=0.0398 val_r2=0.7327 val_mape=3.21%
+    ep 114 (2.9s): train_loss=0.1731 train_rmse=0.0322 val_rmse=0.0395 val_r2=0.7370 val_mape=3.19%
+    ep 115 (2.9s): train_loss=0.1860 train_rmse=0.0334 val_rmse=0.0395 val_r2=0.7362 val_mape=3.20%
+    ep 116 (2.8s): train_loss=0.1804 train_rmse=0.0329 val_rmse=0.0395 val_r2=0.7369 val_mape=3.17%
+    ep 117 (2.9s): train_loss=0.1989 train_rmse=0.0345 val_rmse=0.0393 val_r2=0.7397 val_mape=3.16%
+    ep 118 (3.0s): train_loss=0.2053 train_rmse=0.0351 val_rmse=0.0390 val_r2=0.7434 val_mape=3.14%
+    ep 119 (3.0s): train_loss=0.2054 train_rmse=0.0351 val_rmse=0.0393 val_r2=0.7388 val_mape=3.18%
+    final: rmse=0.0389  mae=0.0211  r2=0.7452  mape=3.11%  (343.0s, best_ep=71)
+  -- fold 2 --
+    [seed] reset RNG for target/fold: 45
+    [fold-norm] loading normalized cache for fold 2...
+    [fold-norm] done via normalized-cache (10.1s)
+    target oxide_etch stats: mean=0.6587 std=0.0777
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=71
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.620, min selected |corr|=0.327, 0.0s)
+    [aux] wafer-mean aux head ENABLED, weight=0.3
+    [mixup] ENABLED  alpha=0.2  prob=1.0
+    [ema] ENABLED  decay=0.999  validates on shadow weights
+    [early-stop] DISABLED (patience=0). Will run full 120 epochs.
+    ep   0 (3.3s): train_loss=0.9627 train_rmse=0.0763 val_rmse=0.0752 val_r2=0.0052 val_mape=9.37%
+    ep   1 (3.1s): train_loss=0.9210 train_rmse=0.0746 val_rmse=0.0735 val_r2=0.0497 val_mape=9.17%
+    ep   2 (3.2s): train_loss=0.8098 train_rmse=0.0700 val_rmse=0.0747 val_r2=0.0207 val_mape=9.35%
+    ep   3 (3.1s): train_loss=0.8287 train_rmse=0.0708 val_rmse=0.0707 val_r2=0.1212 val_mape=8.87%
+    ep   4 (3.1s): train_loss=0.8475 train_rmse=0.0716 val_rmse=0.0698 val_r2=0.1444 val_mape=8.65%
+    ep   5 (3.1s): train_loss=0.8347 train_rmse=0.0710 val_rmse=0.0691 val_r2=0.1620 val_mape=8.51%
+    ep   6 (3.2s): train_loss=0.7116 train_rmse=0.0656 val_rmse=0.0680 val_r2=0.1874 val_mape=8.45%
+    ep   7 (2.9s): train_loss=0.7322 train_rmse=0.0665 val_rmse=0.0669 val_r2=0.2131 val_mape=8.31%
+    ep   8 (2.8s): train_loss=0.7321 train_rmse=0.0665 val_rmse=0.0644 val_r2=0.2712 val_mape=7.94%
+    ep   9 (2.7s): train_loss=0.7579 train_rmse=0.0677 val_rmse=0.0644 val_r2=0.2712 val_mape=7.83%
+    ep  10 (2.8s): train_loss=0.7142 train_rmse=0.0657 val_rmse=0.0622 val_r2=0.3203 val_mape=7.38%
+    ep  11 (2.9s): train_loss=0.6410 train_rmse=0.0622 val_rmse=0.0624 val_r2=0.3155 val_mape=7.07%
+    ep  12 (2.8s): train_loss=0.6940 train_rmse=0.0648 val_rmse=0.0733 val_r2=0.0567 val_mape=7.62%
+    ep  13 (2.7s): train_loss=0.6682 train_rmse=0.0635 val_rmse=0.0617 val_r2=0.3313 val_mape=7.08%
+    ep  14 (2.7s): train_loss=0.6796 train_rmse=0.0641 val_rmse=0.0573 val_r2=0.4233 val_mape=6.28%
+    ep  15 (2.8s): train_loss=0.7084 train_rmse=0.0654 val_rmse=0.0586 val_r2=0.3961 val_mape=6.26%
+    ep  16 (2.8s): train_loss=0.6877 train_rmse=0.0645 val_rmse=0.0633 val_r2=0.2952 val_mape=6.64%
+    ep  17 (2.7s): train_loss=0.7055 train_rmse=0.0653 val_rmse=0.0609 val_r2=0.3490 val_mape=6.31%
+    ep  18 (3.0s): train_loss=0.6537 train_rmse=0.0629 val_rmse=0.0582 val_r2=0.4040 val_mape=6.19%
+    ep  19 (2.8s): train_loss=0.6804 train_rmse=0.0641 val_rmse=0.0604 val_r2=0.3589 val_mape=6.25%
+    ep  20 (2.8s): train_loss=0.6366 train_rmse=0.0620 val_rmse=0.0645 val_r2=0.2679 val_mape=6.58%
+    ep  21 (2.8s): train_loss=0.5972 train_rmse=0.0601 val_rmse=0.0645 val_r2=0.2697 val_mape=6.49%
+    ep  22 (2.8s): train_loss=0.5766 train_rmse=0.0590 val_rmse=0.0607 val_r2=0.3517 val_mape=6.04%
+    ep  23 (2.8s): train_loss=0.6202 train_rmse=0.0612 val_rmse=0.0591 val_r2=0.3873 val_mape=5.75%
+    ep  24 (2.8s): train_loss=0.6753 train_rmse=0.0639 val_rmse=0.0616 val_r2=0.3338 val_mape=5.78%
+    ep  25 (2.8s): train_loss=0.6490 train_rmse=0.0626 val_rmse=0.0591 val_r2=0.3873 val_mape=6.21%
+    ep  26 (2.8s): train_loss=0.5097 train_rmse=0.0555 val_rmse=0.0760 val_r2=-0.0138 val_mape=8.09%
+    ep  27 (2.8s): train_loss=0.6154 train_rmse=0.0610 val_rmse=0.0718 val_r2=0.0936 val_mape=7.60%
+    ep  28 (2.8s): train_loss=0.5604 train_rmse=0.0582 val_rmse=0.0546 val_r2=0.4766 val_mape=5.37%
+    ep  29 (2.8s): train_loss=0.6638 train_rmse=0.0633 val_rmse=0.0624 val_r2=0.3149 val_mape=5.76%
+    ep  30 (2.8s): train_loss=0.5659 train_rmse=0.0585 val_rmse=0.0573 val_r2=0.4236 val_mape=5.38%
+    ep  31 (2.9s): train_loss=0.5299 train_rmse=0.0566 val_rmse=0.0612 val_r2=0.3429 val_mape=5.56%
+    ep  32 (2.9s): train_loss=0.5966 train_rmse=0.0600 val_rmse=0.0616 val_r2=0.3338 val_mape=5.55%
+    ep  33 (2.8s): train_loss=0.5476 train_rmse=0.0575 val_rmse=0.0586 val_r2=0.3963 val_mape=5.30%
+    ep  34 (2.8s): train_loss=0.4851 train_rmse=0.0541 val_rmse=0.0610 val_r2=0.3471 val_mape=5.44%
+    ep  35 (2.8s): train_loss=0.5496 train_rmse=0.0576 val_rmse=0.0644 val_r2=0.2717 val_mape=5.76%
+    ep  36 (2.8s): train_loss=0.4768 train_rmse=0.0537 val_rmse=0.0643 val_r2=0.2732 val_mape=5.75%
+    ep  37 (2.8s): train_loss=0.4730 train_rmse=0.0535 val_rmse=0.0756 val_r2=-0.0056 val_mape=7.12%
+    ep  38 (2.8s): train_loss=0.5078 train_rmse=0.0554 val_rmse=0.0709 val_r2=0.1176 val_mape=6.57%
+    ep  39 (2.8s): train_loss=0.6101 train_rmse=0.0607 val_rmse=0.0665 val_r2=0.2232 val_mape=5.98%
+    ep  40 (2.8s): train_loss=0.4581 train_rmse=0.0526 val_rmse=0.0570 val_r2=0.4286 val_mape=5.43%
+    ep  41 (2.8s): train_loss=0.3999 train_rmse=0.0492 val_rmse=0.0568 val_r2=0.4332 val_mape=5.56%
+    ep  42 (2.8s): train_loss=0.3956 train_rmse=0.0489 val_rmse=0.0570 val_r2=0.4286 val_mape=5.33%
+    ep  43 (2.8s): train_loss=0.4099 train_rmse=0.0498 val_rmse=0.0736 val_r2=0.0486 val_mape=6.81%
+    ep  44 (2.8s): train_loss=0.5653 train_rmse=0.0584 val_rmse=0.0927 val_r2=-0.5115 val_mape=9.04%
+    ep  45 (2.8s): train_loss=0.4892 train_rmse=0.0544 val_rmse=0.0868 val_r2=-0.3237 val_mape=8.48%
+    ep  46 (2.8s): train_loss=0.4205 train_rmse=0.0504 val_rmse=0.0642 val_r2=0.2757 val_mape=5.72%
+    ep  47 (2.8s): train_loss=0.5251 train_rmse=0.0563 val_rmse=0.0604 val_r2=0.3595 val_mape=5.46%
+    ep  48 (2.8s): train_loss=0.3794 train_rmse=0.0479 val_rmse=0.0724 val_r2=0.0788 val_mape=6.64%
+    ep  49 (2.8s): train_loss=0.3471 train_rmse=0.0458 val_rmse=0.0777 val_r2=-0.0607 val_mape=7.32%
+    ep  50 (2.8s): train_loss=0.3394 train_rmse=0.0453 val_rmse=0.0653 val_r2=0.2507 val_mape=5.83%
+    ep  51 (2.8s): train_loss=0.4640 train_rmse=0.0530 val_rmse=0.0647 val_r2=0.2638 val_mape=5.77%
+    ep  52 (2.8s): train_loss=0.5541 train_rmse=0.0579 val_rmse=0.0639 val_r2=0.2820 val_mape=5.76%
+    ep  53 (2.8s): train_loss=0.3699 train_rmse=0.0473 val_rmse=0.0597 val_r2=0.3741 val_mape=5.82%
+    ep  54 (2.8s): train_loss=0.4551 train_rmse=0.0524 val_rmse=0.0584 val_r2=0.4012 val_mape=5.66%
+    ep  55 (2.8s): train_loss=0.3734 train_rmse=0.0475 val_rmse=0.0604 val_r2=0.3592 val_mape=5.94%
+    ep  56 (2.9s): train_loss=0.3400 train_rmse=0.0453 val_rmse=0.0601 val_r2=0.3661 val_mape=5.90%
+    ep  57 (3.0s): train_loss=0.3591 train_rmse=0.0466 val_rmse=0.0569 val_r2=0.4320 val_mape=5.44%
+    ep  58 (3.0s): train_loss=0.3062 train_rmse=0.0430 val_rmse=0.0623 val_r2=0.3182 val_mape=5.66%
+    ep  59 (3.0s): train_loss=0.3294 train_rmse=0.0446 val_rmse=0.0813 val_r2=-0.1617 val_mape=7.81%
+    ep  60 (3.0s): train_loss=0.3230 train_rmse=0.0442 val_rmse=0.0915 val_r2=-0.4723 val_mape=8.83%
+    ep  61 (2.9s): train_loss=0.3358 train_rmse=0.0450 val_rmse=0.0764 val_r2=-0.0266 val_mape=7.18%
+    ep  62 (3.0s): train_loss=0.3080 train_rmse=0.0431 val_rmse=0.0839 val_r2=-0.2365 val_mape=8.02%
+    ep  63 (2.9s): train_loss=0.3280 train_rmse=0.0445 val_rmse=0.0945 val_r2=-0.5689 val_mape=9.06%
+    ep  64 (2.9s): train_loss=0.3084 train_rmse=0.0432 val_rmse=0.0845 val_r2=-0.2546 val_mape=8.00%
+    ep  65 (2.9s): train_loss=0.3276 train_rmse=0.0445 val_rmse=0.0776 val_r2=-0.0582 val_mape=7.39%
+    ep  66 (3.0s): train_loss=0.3185 train_rmse=0.0439 val_rmse=0.0818 val_r2=-0.1767 val_mape=7.70%
+    ep  67 (2.9s): train_loss=0.2955 train_rmse=0.0423 val_rmse=0.0701 val_r2=0.1375 val_mape=6.63%
+    ep  68 (2.9s): train_loss=0.3208 train_rmse=0.0440 val_rmse=0.0699 val_r2=0.1407 val_mape=6.61%
+    ep  69 (2.9s): train_loss=0.2904 train_rmse=0.0419 val_rmse=0.0716 val_r2=0.0988 val_mape=6.76%
+    ep  70 (2.9s): train_loss=0.2992 train_rmse=0.0425 val_rmse=0.0667 val_r2=0.2175 val_mape=6.29%
+    ep  71 (2.8s): train_loss=0.2819 train_rmse=0.0413 val_rmse=0.0611 val_r2=0.3448 val_mape=5.76%
+    ep  72 (2.9s): train_loss=0.3058 train_rmse=0.0430 val_rmse=0.0591 val_r2=0.3854 val_mape=5.55%
+    ep  73 (2.8s): train_loss=0.3001 train_rmse=0.0426 val_rmse=0.0570 val_r2=0.4301 val_mape=5.30%
+    ep  74 (2.8s): train_loss=0.2799 train_rmse=0.0411 val_rmse=0.0593 val_r2=0.3819 val_mape=5.49%
+    ep  75 (2.8s): train_loss=0.2702 train_rmse=0.0404 val_rmse=0.0576 val_r2=0.4168 val_mape=5.32%
+    ep  76 (2.8s): train_loss=0.3036 train_rmse=0.0428 val_rmse=0.0590 val_r2=0.3883 val_mape=5.42%
+    ep  77 (2.8s): train_loss=0.3360 train_rmse=0.0451 val_rmse=0.0653 val_r2=0.2518 val_mape=5.97%
+    ep  78 (2.9s): train_loss=0.3088 train_rmse=0.0432 val_rmse=0.0782 val_r2=-0.0747 val_mape=7.36%
+    ep  79 (2.8s): train_loss=0.2764 train_rmse=0.0409 val_rmse=0.0691 val_r2=0.1613 val_mape=6.45%
+    ep  80 (2.9s): train_loss=0.2760 train_rmse=0.0408 val_rmse=0.0620 val_r2=0.3242 val_mape=5.74%
+    ep  81 (2.9s): train_loss=0.3035 train_rmse=0.0428 val_rmse=0.0619 val_r2=0.3277 val_mape=5.71%
+    ep  82 (2.8s): train_loss=0.2753 train_rmse=0.0408 val_rmse=0.0656 val_r2=0.2430 val_mape=6.09%
+    ep  83 (2.8s): train_loss=0.2797 train_rmse=0.0411 val_rmse=0.0651 val_r2=0.2564 val_mape=6.06%
+    ep  84 (2.9s): train_loss=0.2909 train_rmse=0.0419 val_rmse=0.0637 val_r2=0.2862 val_mape=5.93%
+    ep  85 (3.0s): train_loss=0.2435 train_rmse=0.0384 val_rmse=0.0675 val_r2=0.2004 val_mape=6.33%
+    ep  86 (3.0s): train_loss=0.2648 train_rmse=0.0400 val_rmse=0.0666 val_r2=0.2215 val_mape=6.23%
+    ep  87 (3.0s): train_loss=0.2643 train_rmse=0.0400 val_rmse=0.0666 val_r2=0.2197 val_mape=6.25%
+    ep  88 (3.0s): train_loss=0.2533 train_rmse=0.0391 val_rmse=0.0690 val_r2=0.1630 val_mape=6.49%
+    ep  89 (3.0s): train_loss=0.2483 train_rmse=0.0387 val_rmse=0.0682 val_r2=0.1831 val_mape=6.38%
+    ep  90 (3.0s): train_loss=0.2449 train_rmse=0.0385 val_rmse=0.0644 val_r2=0.2720 val_mape=5.97%
+    ep  91 (3.0s): train_loss=0.2679 train_rmse=0.0402 val_rmse=0.0642 val_r2=0.2751 val_mape=5.96%
+    ep  92 (3.0s): train_loss=0.2607 train_rmse=0.0397 val_rmse=0.0646 val_r2=0.2665 val_mape=6.00%
+    ep  93 (3.0s): train_loss=0.2873 train_rmse=0.0417 val_rmse=0.0656 val_r2=0.2440 val_mape=6.11%
+    ep  94 (3.0s): train_loss=0.2767 train_rmse=0.0409 val_rmse=0.0680 val_r2=0.1874 val_mape=6.38%
+    ep  95 (3.0s): train_loss=0.2616 train_rmse=0.0398 val_rmse=0.0656 val_r2=0.2445 val_mape=6.13%
+    ep  96 (3.0s): train_loss=0.2572 train_rmse=0.0394 val_rmse=0.0744 val_r2=0.0265 val_mape=7.04%
+    ep  97 (3.0s): train_loss=0.2588 train_rmse=0.0395 val_rmse=0.0842 val_r2=-0.2450 val_mape=7.90%
+    ep  98 (3.0s): train_loss=0.2554 train_rmse=0.0393 val_rmse=0.0816 val_r2=-0.1696 val_mape=7.68%
+    ep  99 (3.0s): train_loss=0.2692 train_rmse=0.0403 val_rmse=0.0724 val_r2=0.0801 val_mape=6.86%
+    ep 100 (3.0s): train_loss=0.2569 train_rmse=0.0394 val_rmse=0.0664 val_r2=0.2246 val_mape=6.33%
+    ep 101 (3.0s): train_loss=0.2439 train_rmse=0.0384 val_rmse=0.0636 val_r2=0.2902 val_mape=6.00%
+    ep 102 (3.0s): train_loss=0.2416 train_rmse=0.0382 val_rmse=0.0645 val_r2=0.2694 val_mape=6.13%
+    ep 103 (3.0s): train_loss=0.2469 train_rmse=0.0386 val_rmse=0.0637 val_r2=0.2880 val_mape=6.03%
+    ep 104 (3.0s): train_loss=0.2445 train_rmse=0.0384 val_rmse=0.0625 val_r2=0.3140 val_mape=5.88%
+    ep 105 (3.0s): train_loss=0.2321 train_rmse=0.0375 val_rmse=0.0626 val_r2=0.3125 val_mape=5.88%
+    ep 106 (3.0s): train_loss=0.2645 train_rmse=0.0400 val_rmse=0.0628 val_r2=0.3080 val_mape=5.91%
+    ep 107 (3.0s): train_loss=0.2383 train_rmse=0.0379 val_rmse=0.0620 val_r2=0.3238 val_mape=5.81%
+    ep 108 (3.0s): train_loss=0.2447 train_rmse=0.0385 val_rmse=0.0615 val_r2=0.3353 val_mape=5.74%
+    ep 109 (3.0s): train_loss=0.2629 train_rmse=0.0399 val_rmse=0.0608 val_r2=0.3511 val_mape=5.67%
+    ep 110 (3.0s): train_loss=0.2534 train_rmse=0.0391 val_rmse=0.0603 val_r2=0.3602 val_mape=5.64%
+    ep 111 (3.0s): train_loss=0.2358 train_rmse=0.0378 val_rmse=0.0610 val_r2=0.3462 val_mape=5.67%
+    ep 112 (3.0s): train_loss=0.2537 train_rmse=0.0392 val_rmse=0.0610 val_r2=0.3452 val_mape=5.69%
+    ep 113 (3.0s): train_loss=0.2527 train_rmse=0.0391 val_rmse=0.0618 val_r2=0.3298 val_mape=5.76%
+    ep 114 (3.0s): train_loss=0.2839 train_rmse=0.0414 val_rmse=0.0620 val_r2=0.3240 val_mape=5.82%
+    ep 115 (3.1s): train_loss=0.2506 train_rmse=0.0389 val_rmse=0.0615 val_r2=0.3362 val_mape=5.72%
+    ep 116 (3.1s): train_loss=0.2548 train_rmse=0.0392 val_rmse=0.0611 val_r2=0.3433 val_mape=5.69%
+    ep 117 (3.0s): train_loss=0.2295 train_rmse=0.0372 val_rmse=0.0614 val_r2=0.3386 val_mape=5.73%
+    ep 118 (3.0s): train_loss=0.2476 train_rmse=0.0387 val_rmse=0.0616 val_r2=0.3325 val_mape=5.76%
+    ep 119 (3.0s): train_loss=0.2397 train_rmse=0.0381 val_rmse=0.0612 val_r2=0.3412 val_mape=5.69%
+    final: rmse=0.0546  mae=0.0340  r2=0.4766  mape=5.37%  (358.2s, best_ep=28)
+  -- fold 3 --
+    [seed] reset RNG for target/fold: 46
+    [fold-norm] loading normalized cache for fold 3...
+    [fold-norm] done via normalized-cache (12.0s)
+    target oxide_etch stats: mean=0.6580 std=0.0770
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=70
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.613, min selected |corr|=0.378, 0.0s)
+    [aux] wafer-mean aux head ENABLED, weight=0.3
+    [mixup] ENABLED  alpha=0.2  prob=1.0
+    [ema] ENABLED  decay=0.999  validates on shadow weights
+    [early-stop] DISABLED (patience=0). Will run full 120 epochs.
+    ep   0 (3.5s): train_loss=1.0276 train_rmse=0.0781 val_rmse=0.0779 val_r2=0.0131 val_mape=9.56%
+    ep   1 (3.2s): train_loss=0.8711 train_rmse=0.0719 val_rmse=0.0737 val_r2=0.1161 val_mape=9.05%
+    ep   2 (3.2s): train_loss=0.7397 train_rmse=0.0662 val_rmse=0.0644 val_r2=0.3254 val_mape=8.01%
+    ep   3 (3.2s): train_loss=0.7978 train_rmse=0.0688 val_rmse=0.0633 val_r2=0.3480 val_mape=7.82%
+    ep   4 (3.0s): train_loss=0.6594 train_rmse=0.0625 val_rmse=0.0612 val_r2=0.3902 val_mape=7.48%
+    ep   5 (2.9s): train_loss=0.7164 train_rmse=0.0652 val_rmse=0.0600 val_r2=0.4136 val_mape=7.26%
+    ep   6 (2.9s): train_loss=0.6135 train_rmse=0.0603 val_rmse=0.0580 val_r2=0.4527 val_mape=6.91%
+    ep   7 (2.9s): train_loss=0.5661 train_rmse=0.0579 val_rmse=0.0549 val_r2=0.5090 val_mape=6.31%
+    ep   8 (2.9s): train_loss=0.5927 train_rmse=0.0593 val_rmse=0.0545 val_r2=0.5175 val_mape=6.20%
+    ep   9 (2.9s): train_loss=0.6225 train_rmse=0.0608 val_rmse=0.0530 val_r2=0.5432 val_mape=5.94%
+    ep  10 (2.9s): train_loss=0.4935 train_rmse=0.0541 val_rmse=0.0524 val_r2=0.5540 val_mape=5.65%
+    ep  11 (2.9s): train_loss=0.4837 train_rmse=0.0536 val_rmse=0.0514 val_r2=0.5708 val_mape=5.45%
+    ep  12 (2.9s): train_loss=0.4602 train_rmse=0.0522 val_rmse=0.0508 val_r2=0.5807 val_mape=5.30%
+    ep  13 (2.9s): train_loss=0.4883 train_rmse=0.0538 val_rmse=0.0500 val_r2=0.5927 val_mape=5.22%
+    ep  14 (2.8s): train_loss=0.4303 train_rmse=0.0505 val_rmse=0.0500 val_r2=0.5930 val_mape=5.10%
+    ep  15 (2.8s): train_loss=0.4078 train_rmse=0.0492 val_rmse=0.0497 val_r2=0.5985 val_mape=5.06%
+    ep  16 (2.8s): train_loss=0.4863 train_rmse=0.0537 val_rmse=0.0497 val_r2=0.5978 val_mape=5.06%
+    ep  17 (2.9s): train_loss=0.4141 train_rmse=0.0496 val_rmse=0.0495 val_r2=0.6021 val_mape=4.94%
+    ep  18 (2.9s): train_loss=0.4332 train_rmse=0.0507 val_rmse=0.0489 val_r2=0.6105 val_mape=4.88%
+    ep  19 (2.9s): train_loss=0.3923 train_rmse=0.0482 val_rmse=0.0485 val_r2=0.6178 val_mape=4.79%
+    ep  20 (3.0s): train_loss=0.3762 train_rmse=0.0472 val_rmse=0.0480 val_r2=0.6258 val_mape=4.73%
+    ep  21 (2.9s): train_loss=0.3705 train_rmse=0.0469 val_rmse=0.0470 val_r2=0.6405 val_mape=4.58%
+    ep  22 (3.0s): train_loss=0.3622 train_rmse=0.0464 val_rmse=0.0471 val_r2=0.6393 val_mape=4.53%
+    ep  23 (2.9s): train_loss=0.3897 train_rmse=0.0481 val_rmse=0.0468 val_r2=0.6434 val_mape=4.59%
+    ep  24 (2.9s): train_loss=0.3675 train_rmse=0.0467 val_rmse=0.0472 val_r2=0.6383 val_mape=4.54%
+    ep  25 (2.9s): train_loss=0.4693 train_rmse=0.0528 val_rmse=0.0478 val_r2=0.6291 val_mape=4.50%
+    ep  26 (2.9s): train_loss=0.3604 train_rmse=0.0462 val_rmse=0.0470 val_r2=0.6401 val_mape=4.43%
+    ep  27 (3.1s): train_loss=0.3721 train_rmse=0.0470 val_rmse=0.0470 val_r2=0.6413 val_mape=4.38%
+    ep  28 (3.0s): train_loss=0.3445 train_rmse=0.0452 val_rmse=0.0456 val_r2=0.6623 val_mape=4.29%
+    ep  29 (2.9s): train_loss=0.3305 train_rmse=0.0443 val_rmse=0.0451 val_r2=0.6698 val_mape=4.22%
+    ep  30 (2.9s): train_loss=0.3154 train_rmse=0.0433 val_rmse=0.0455 val_r2=0.6637 val_mape=4.23%
+    ep  31 (2.8s): train_loss=0.3638 train_rmse=0.0465 val_rmse=0.0452 val_r2=0.6671 val_mape=4.22%
+    ep  32 (2.8s): train_loss=0.3187 train_rmse=0.0435 val_rmse=0.0448 val_r2=0.6735 val_mape=4.18%
+    ep  33 (2.8s): train_loss=0.3324 train_rmse=0.0444 val_rmse=0.0448 val_r2=0.6738 val_mape=4.21%
+    ep  34 (2.9s): train_loss=0.3237 train_rmse=0.0438 val_rmse=0.0444 val_r2=0.6795 val_mape=4.18%
+    ep  35 (2.8s): train_loss=0.3231 train_rmse=0.0438 val_rmse=0.0442 val_r2=0.6818 val_mape=4.16%
+    ep  36 (2.9s): train_loss=0.3493 train_rmse=0.0455 val_rmse=0.0441 val_r2=0.6836 val_mape=4.15%
+    ep  37 (2.9s): train_loss=0.2660 train_rmse=0.0397 val_rmse=0.0440 val_r2=0.6848 val_mape=4.17%
+    ep  38 (3.2s): train_loss=0.2976 train_rmse=0.0420 val_rmse=0.0437 val_r2=0.6895 val_mape=4.15%
+    ep  39 (3.0s): train_loss=0.2727 train_rmse=0.0402 val_rmse=0.0436 val_r2=0.6907 val_mape=4.14%
+    ep  40 (3.2s): train_loss=0.3107 train_rmse=0.0429 val_rmse=0.0434 val_r2=0.6937 val_mape=4.09%
+    ep  41 (3.0s): train_loss=0.3247 train_rmse=0.0439 val_rmse=0.0434 val_r2=0.6941 val_mape=4.07%
+    ep  42 (3.0s): train_loss=0.3193 train_rmse=0.0435 val_rmse=0.0435 val_r2=0.6927 val_mape=4.11%
+    ep  43 (3.0s): train_loss=0.2984 train_rmse=0.0421 val_rmse=0.0435 val_r2=0.6922 val_mape=4.12%
+    ep  44 (2.9s): train_loss=0.3350 train_rmse=0.0446 val_rmse=0.0438 val_r2=0.6878 val_mape=4.16%
+    ep  45 (3.0s): train_loss=0.3068 train_rmse=0.0427 val_rmse=0.0442 val_r2=0.6826 val_mape=4.20%
+    ep  46 (2.9s): train_loss=0.2890 train_rmse=0.0414 val_rmse=0.0450 val_r2=0.6706 val_mape=4.26%
+    ep  47 (2.8s): train_loss=0.3035 train_rmse=0.0424 val_rmse=0.0452 val_r2=0.6682 val_mape=4.27%
+    ep  48 (2.8s): train_loss=0.2640 train_rmse=0.0396 val_rmse=0.0450 val_r2=0.6705 val_mape=4.25%
+    ep  49 (2.8s): train_loss=0.2860 train_rmse=0.0412 val_rmse=0.0444 val_r2=0.6788 val_mape=4.17%
+    ep  50 (2.8s): train_loss=0.2655 train_rmse=0.0397 val_rmse=0.0441 val_r2=0.6832 val_mape=4.12%
+    ep  51 (2.8s): train_loss=0.2975 train_rmse=0.0420 val_rmse=0.0451 val_r2=0.6692 val_mape=4.23%
+    ep  52 (2.8s): train_loss=0.2594 train_rmse=0.0392 val_rmse=0.0452 val_r2=0.6683 val_mape=4.21%
+    ep  53 (2.8s): train_loss=0.3369 train_rmse=0.0447 val_rmse=0.0449 val_r2=0.6722 val_mape=4.18%
+    ep  54 (2.8s): train_loss=0.2689 train_rmse=0.0399 val_rmse=0.0451 val_r2=0.6693 val_mape=4.20%
+    ep  55 (2.8s): train_loss=0.2719 train_rmse=0.0402 val_rmse=0.0459 val_r2=0.6575 val_mape=4.32%
+    ep  56 (2.8s): train_loss=0.2709 train_rmse=0.0401 val_rmse=0.0450 val_r2=0.6710 val_mape=4.24%
+    ep  57 (2.8s): train_loss=0.2620 train_rmse=0.0394 val_rmse=0.0449 val_r2=0.6720 val_mape=4.25%
+    ep  58 (2.8s): train_loss=0.2923 train_rmse=0.0416 val_rmse=0.0444 val_r2=0.6801 val_mape=4.18%
+    ep  59 (2.8s): train_loss=0.2535 train_rmse=0.0388 val_rmse=0.0445 val_r2=0.6782 val_mape=4.18%
+    ep  60 (2.9s): train_loss=0.2271 train_rmse=0.0367 val_rmse=0.0443 val_r2=0.6811 val_mape=4.16%
+    ep  61 (2.8s): train_loss=0.2534 train_rmse=0.0388 val_rmse=0.0444 val_r2=0.6794 val_mape=4.16%
+    ep  62 (2.8s): train_loss=0.2600 train_rmse=0.0393 val_rmse=0.0441 val_r2=0.6831 val_mape=4.17%
+    ep  63 (2.8s): train_loss=0.2520 train_rmse=0.0387 val_rmse=0.0441 val_r2=0.6838 val_mape=4.15%
+    ep  64 (2.8s): train_loss=0.2374 train_rmse=0.0375 val_rmse=0.0437 val_r2=0.6891 val_mape=4.09%
+    ep  65 (2.8s): train_loss=0.2490 train_rmse=0.0384 val_rmse=0.0440 val_r2=0.6849 val_mape=4.11%
+    ep  66 (2.9s): train_loss=0.2698 train_rmse=0.0400 val_rmse=0.0445 val_r2=0.6782 val_mape=4.16%
+    ep  67 (2.8s): train_loss=0.2569 train_rmse=0.0390 val_rmse=0.0446 val_r2=0.6760 val_mape=4.16%
+    ep  68 (2.8s): train_loss=0.2474 train_rmse=0.0383 val_rmse=0.0449 val_r2=0.6718 val_mape=4.17%
+    ep  69 (2.9s): train_loss=0.2502 train_rmse=0.0385 val_rmse=0.0443 val_r2=0.6811 val_mape=4.11%
+    ep  70 (3.0s): train_loss=0.2369 train_rmse=0.0375 val_rmse=0.0440 val_r2=0.6859 val_mape=4.10%
+    ep  71 (2.9s): train_loss=0.2527 train_rmse=0.0387 val_rmse=0.0442 val_r2=0.6826 val_mape=4.14%
+    ep  72 (2.8s): train_loss=0.2438 train_rmse=0.0380 val_rmse=0.0443 val_r2=0.6803 val_mape=4.12%
+    ep  73 (2.8s): train_loss=0.2490 train_rmse=0.0384 val_rmse=0.0437 val_r2=0.6896 val_mape=4.04%
+    ep  74 (2.8s): train_loss=0.2384 train_rmse=0.0376 val_rmse=0.0439 val_r2=0.6865 val_mape=4.02%
+    ep  75 (2.8s): train_loss=0.2329 train_rmse=0.0372 val_rmse=0.0428 val_r2=0.7015 val_mape=3.87%
+    ep  76 (2.8s): train_loss=0.2622 train_rmse=0.0394 val_rmse=0.0430 val_r2=0.6995 val_mape=3.88%
+    ep  77 (2.8s): train_loss=0.2099 train_rmse=0.0353 val_rmse=0.0432 val_r2=0.6969 val_mape=3.92%
+    ep  78 (2.8s): train_loss=0.2606 train_rmse=0.0393 val_rmse=0.0435 val_r2=0.6924 val_mape=3.97%
+    ep  79 (2.8s): train_loss=0.2398 train_rmse=0.0377 val_rmse=0.0438 val_r2=0.6887 val_mape=3.98%
+    ep  80 (2.8s): train_loss=0.2483 train_rmse=0.0384 val_rmse=0.0430 val_r2=0.6997 val_mape=3.89%
+    ep  81 (2.8s): train_loss=0.2377 train_rmse=0.0376 val_rmse=0.0431 val_r2=0.6981 val_mape=3.90%
+    ep  82 (2.9s): train_loss=0.2133 train_rmse=0.0356 val_rmse=0.0438 val_r2=0.6878 val_mape=4.00%
+    ep  83 (2.8s): train_loss=0.2520 train_rmse=0.0387 val_rmse=0.0434 val_r2=0.6942 val_mape=3.90%
+    ep  84 (2.8s): train_loss=0.2731 train_rmse=0.0403 val_rmse=0.0432 val_r2=0.6963 val_mape=3.91%
+    ep  85 (2.9s): train_loss=0.2539 train_rmse=0.0388 val_rmse=0.0434 val_r2=0.6942 val_mape=3.90%
+    ep  86 (3.0s): train_loss=0.2440 train_rmse=0.0380 val_rmse=0.0433 val_r2=0.6946 val_mape=3.90%
+    ep  87 (2.9s): train_loss=0.2238 train_rmse=0.0364 val_rmse=0.0433 val_r2=0.6949 val_mape=3.89%
+    ep  88 (2.8s): train_loss=0.2346 train_rmse=0.0373 val_rmse=0.0427 val_r2=0.7039 val_mape=3.81%
+    ep  89 (2.8s): train_loss=0.2346 train_rmse=0.0373 val_rmse=0.0425 val_r2=0.7058 val_mape=3.78%
+    ep  90 (2.8s): train_loss=0.2355 train_rmse=0.0374 val_rmse=0.0428 val_r2=0.7027 val_mape=3.78%
+    ep  91 (2.8s): train_loss=0.2161 train_rmse=0.0358 val_rmse=0.0424 val_r2=0.7078 val_mape=3.73%
+    ep  92 (2.8s): train_loss=0.2177 train_rmse=0.0359 val_rmse=0.0420 val_r2=0.7136 val_mape=3.66%
+    ep  93 (2.9s): train_loss=0.2195 train_rmse=0.0361 val_rmse=0.0421 val_r2=0.7121 val_mape=3.65%
+    ep  94 (2.8s): train_loss=0.2277 train_rmse=0.0368 val_rmse=0.0420 val_r2=0.7126 val_mape=3.65%
+    ep  95 (2.8s): train_loss=0.2244 train_rmse=0.0365 val_rmse=0.0411 val_r2=0.7254 val_mape=3.54%
+    ep  96 (2.9s): train_loss=0.2188 train_rmse=0.0360 val_rmse=0.0417 val_r2=0.7167 val_mape=3.63%
+    ep  97 (2.8s): train_loss=0.2263 train_rmse=0.0366 val_rmse=0.0417 val_r2=0.7175 val_mape=3.62%
+    ep  98 (2.8s): train_loss=0.2458 train_rmse=0.0382 val_rmse=0.0412 val_r2=0.7233 val_mape=3.55%
+    ep  99 (2.8s): train_loss=0.2274 train_rmse=0.0367 val_rmse=0.0412 val_r2=0.7236 val_mape=3.57%
+    ep 100 (2.9s): train_loss=0.2212 train_rmse=0.0362 val_rmse=0.0416 val_r2=0.7188 val_mape=3.61%
+    ep 101 (2.8s): train_loss=0.2206 train_rmse=0.0362 val_rmse=0.0419 val_r2=0.7141 val_mape=3.65%
+    ep 102 (2.8s): train_loss=0.2171 train_rmse=0.0359 val_rmse=0.0413 val_r2=0.7226 val_mape=3.56%
+    ep 103 (2.8s): train_loss=0.2023 train_rmse=0.0346 val_rmse=0.0413 val_r2=0.7230 val_mape=3.54%
+    ep 104 (2.8s): train_loss=0.2120 train_rmse=0.0355 val_rmse=0.0413 val_r2=0.7222 val_mape=3.55%
+    ep 105 (2.8s): train_loss=0.1938 train_rmse=0.0339 val_rmse=0.0412 val_r2=0.7241 val_mape=3.53%
+    ep 106 (2.8s): train_loss=0.2096 train_rmse=0.0353 val_rmse=0.0413 val_r2=0.7220 val_mape=3.57%
+    ep 107 (2.9s): train_loss=0.2213 train_rmse=0.0362 val_rmse=0.0413 val_r2=0.7223 val_mape=3.57%
+    ep 108 (2.8s): train_loss=0.2118 train_rmse=0.0354 val_rmse=0.0409 val_r2=0.7273 val_mape=3.51%
+    ep 109 (2.9s): train_loss=0.2289 train_rmse=0.0368 val_rmse=0.0412 val_r2=0.7235 val_mape=3.55%
+    ep 110 (2.8s): train_loss=0.2284 train_rmse=0.0368 val_rmse=0.0411 val_r2=0.7259 val_mape=3.53%
+    ep 111 (2.8s): train_loss=0.2185 train_rmse=0.0360 val_rmse=0.0409 val_r2=0.7275 val_mape=3.51%
+    ep 112 (2.8s): train_loss=0.2154 train_rmse=0.0357 val_rmse=0.0411 val_r2=0.7246 val_mape=3.56%
+    ep 113 (2.9s): train_loss=0.1988 train_rmse=0.0343 val_rmse=0.0411 val_r2=0.7254 val_mape=3.52%
+    ep 114 (2.9s): train_loss=0.2238 train_rmse=0.0364 val_rmse=0.0409 val_r2=0.7276 val_mape=3.53%
+    ep 115 (2.9s): train_loss=0.2226 train_rmse=0.0363 val_rmse=0.0410 val_r2=0.7270 val_mape=3.51%
+    ep 116 (2.8s): train_loss=0.2286 train_rmse=0.0368 val_rmse=0.0407 val_r2=0.7303 val_mape=3.48%
+    ep 117 (2.8s): train_loss=0.2328 train_rmse=0.0372 val_rmse=0.0409 val_r2=0.7276 val_mape=3.53%
+    ep 118 (2.8s): train_loss=0.2070 train_rmse=0.0350 val_rmse=0.0409 val_r2=0.7278 val_mape=3.53%
+    ep 119 (2.8s): train_loss=0.2182 train_rmse=0.0360 val_rmse=0.0410 val_r2=0.7263 val_mape=3.53%
+    final: rmse=0.0407  mae=0.0233  r2=0.7303  mape=3.48%  (358.1s, best_ep=116)
+  -- fold 4 --
+    [seed] reset RNG for target/fold: 47
+    [fold-norm] loading normalized cache for fold 4...
+    [fold-norm] done via normalized-cache (10.2s)
+    target oxide_etch stats: mean=0.6575 std=0.0774
+    [oes-band] correlation selection: stat=late_mean, top_k=256, train_wafers=70
+    [oes-band] selected 256/3648 wavelengths (max|corr|=0.571, min selected |corr|=0.330, 0.0s)
+    [aux] wafer-mean aux head ENABLED, weight=0.3
+    [mixup] ENABLED  alpha=0.2  prob=1.0
+    [ema] ENABLED  decay=0.999  validates on shadow weights
+    [early-stop] DISABLED (patience=0). Will run full 120 epochs.
+    ep   0 (2.9s): train_loss=0.9015 train_rmse=0.0735 val_rmse=0.0749 val_r2=0.0473 val_mape=9.19%
+    ep   1 (2.9s): train_loss=0.8215 train_rmse=0.0702 val_rmse=0.0662 val_r2=0.2570 val_mape=8.14%
+    ep   2 (2.9s): train_loss=0.7174 train_rmse=0.0656 val_rmse=0.0635 val_r2=0.3158 val_mape=7.84%
+    ep   3 (2.9s): train_loss=0.7070 train_rmse=0.0651 val_rmse=0.0645 val_r2=0.2935 val_mape=7.76%
+    ep   4 (3.0s): train_loss=0.6785 train_rmse=0.0638 val_rmse=0.0625 val_r2=0.3377 val_mape=7.59%
+    ep   5 (3.0s): train_loss=0.7101 train_rmse=0.0653 val_rmse=0.0603 val_r2=0.3824 val_mape=7.27%
+    ep   6 (3.0s): train_loss=0.6679 train_rmse=0.0633 val_rmse=0.0592 val_r2=0.4059 val_mape=7.00%
+    ep   7 (3.0s): train_loss=0.6063 train_rmse=0.0603 val_rmse=0.0576 val_r2=0.4370 val_mape=6.52%
+    ep   8 (2.9s): train_loss=0.5517 train_rmse=0.0575 val_rmse=0.0542 val_r2=0.5009 val_mape=5.97%
+    ep   9 (2.7s): train_loss=0.5124 train_rmse=0.0554 val_rmse=0.0533 val_r2=0.5180 val_mape=5.63%
+    ep  10 (2.7s): train_loss=0.4591 train_rmse=0.0525 val_rmse=0.0516 val_r2=0.5481 val_mape=5.41%
+    ep  11 (2.7s): train_loss=0.4568 train_rmse=0.0523 val_rmse=0.0511 val_r2=0.5565 val_mape=5.27%
+    ep  12 (2.7s): train_loss=0.4469 train_rmse=0.0518 val_rmse=0.0509 val_r2=0.5607 val_mape=5.21%
+    ep  13 (2.6s): train_loss=0.4333 train_rmse=0.0510 val_rmse=0.0523 val_r2=0.5365 val_mape=5.24%
+    ep  14 (2.6s): train_loss=0.4481 train_rmse=0.0518 val_rmse=0.0492 val_r2=0.5892 val_mape=4.94%
+    ep  15 (2.6s): train_loss=0.4562 train_rmse=0.0523 val_rmse=0.0501 val_r2=0.5745 val_mape=4.97%
+    ep  16 (2.6s): train_loss=0.4113 train_rmse=0.0497 val_rmse=0.0494 val_r2=0.5854 val_mape=4.84%
+    ep  17 (2.7s): train_loss=0.4149 train_rmse=0.0499 val_rmse=0.0505 val_r2=0.5679 val_mape=4.89%
+    ep  18 (2.7s): train_loss=0.4718 train_rmse=0.0532 val_rmse=0.0536 val_r2=0.5119 val_mape=5.12%
+    ep  19 (2.6s): train_loss=0.4245 train_rmse=0.0505 val_rmse=0.0504 val_r2=0.5689 val_mape=4.93%
+    ep  20 (2.6s): train_loss=0.3963 train_rmse=0.0487 val_rmse=0.0481 val_r2=0.6072 val_mape=4.77%
+    ep  21 (2.6s): train_loss=0.3542 train_rmse=0.0461 val_rmse=0.0469 val_r2=0.6272 val_mape=4.58%
+    ep  22 (2.6s): train_loss=0.3947 train_rmse=0.0486 val_rmse=0.0470 val_r2=0.6251 val_mape=4.54%
+    ep  23 (2.6s): train_loss=0.3502 train_rmse=0.0458 val_rmse=0.0472 val_r2=0.6221 val_mape=4.50%
+    ep  24 (2.6s): train_loss=0.3649 train_rmse=0.0468 val_rmse=0.0481 val_r2=0.6070 val_mape=4.48%
+    ep  25 (2.7s): train_loss=0.4437 train_rmse=0.0516 val_rmse=0.0498 val_r2=0.5792 val_mape=4.59%
+    ep  26 (2.7s): train_loss=0.3940 train_rmse=0.0486 val_rmse=0.0478 val_r2=0.6119 val_mape=4.67%
+    ep  27 (2.6s): train_loss=0.3397 train_rmse=0.0451 val_rmse=0.0464 val_r2=0.6349 val_mape=4.58%
+    ep  28 (2.7s): train_loss=0.3410 train_rmse=0.0452 val_rmse=0.0445 val_r2=0.6643 val_mape=4.38%
+    ep  29 (2.7s): train_loss=0.3759 train_rmse=0.0475 val_rmse=0.0435 val_r2=0.6790 val_mape=4.34%
+    ep  30 (2.6s): train_loss=0.3219 train_rmse=0.0439 val_rmse=0.0422 val_r2=0.6978 val_mape=4.12%
+    ep  31 (2.6s): train_loss=0.3162 train_rmse=0.0435 val_rmse=0.0426 val_r2=0.6926 val_mape=4.13%
+    ep  32 (2.7s): train_loss=0.3126 train_rmse=0.0433 val_rmse=0.0424 val_r2=0.6946 val_mape=4.07%
+    ep  33 (2.7s): train_loss=0.3313 train_rmse=0.0446 val_rmse=0.0425 val_r2=0.6929 val_mape=4.09%
+    ep  34 (2.6s): train_loss=0.3033 train_rmse=0.0426 val_rmse=0.0431 val_r2=0.6853 val_mape=4.07%
+    ep  35 (2.6s): train_loss=0.3128 train_rmse=0.0433 val_rmse=0.0441 val_r2=0.6693 val_mape=4.13%
+    ep  36 (2.7s): train_loss=0.3657 train_rmse=0.0468 val_rmse=0.0441 val_r2=0.6699 val_mape=4.11%
+    ep  37 (2.6s): train_loss=0.3572 train_rmse=0.0463 val_rmse=0.0418 val_r2=0.7036 val_mape=3.93%
+    ep  38 (2.6s): train_loss=0.3229 train_rmse=0.0440 val_rmse=0.0404 val_r2=0.7230 val_mape=3.84%
+    ep  39 (2.7s): train_loss=0.3333 train_rmse=0.0447 val_rmse=0.0406 val_r2=0.7207 val_mape=3.85%
+    ep  40 (2.7s): train_loss=0.3481 train_rmse=0.0457 val_rmse=0.0401 val_r2=0.7271 val_mape=3.80%
+    ep  41 (2.7s): train_loss=0.2960 train_rmse=0.0421 val_rmse=0.0415 val_r2=0.7077 val_mape=3.88%
+    ep  42 (2.7s): train_loss=0.2933 train_rmse=0.0419 val_rmse=0.0419 val_r2=0.7014 val_mape=3.92%
+    ep  43 (2.7s): train_loss=0.3026 train_rmse=0.0426 val_rmse=0.0424 val_r2=0.6952 val_mape=3.93%
+    ep  44 (2.7s): train_loss=0.2973 train_rmse=0.0422 val_rmse=0.0433 val_r2=0.6813 val_mape=3.97%
+    ep  45 (2.7s): train_loss=0.2958 train_rmse=0.0421 val_rmse=0.0421 val_r2=0.6992 val_mape=3.86%
+    ep  46 (2.6s): train_loss=0.2724 train_rmse=0.0404 val_rmse=0.0426 val_r2=0.6921 val_mape=3.86%
+    ep  47 (2.6s): train_loss=0.2651 train_rmse=0.0399 val_rmse=0.0429 val_r2=0.6882 val_mape=3.89%
+    ep  48 (2.7s): train_loss=0.2649 train_rmse=0.0399 val_rmse=0.0439 val_r2=0.6722 val_mape=3.97%
+    ep  49 (2.6s): train_loss=0.2847 train_rmse=0.0413 val_rmse=0.0439 val_r2=0.6736 val_mape=3.92%
+    ep  50 (2.7s): train_loss=0.2741 train_rmse=0.0405 val_rmse=0.0454 val_r2=0.6496 val_mape=3.99%
+    ep  51 (2.7s): train_loss=0.2775 train_rmse=0.0408 val_rmse=0.0426 val_r2=0.6914 val_mape=3.83%
+    ep  52 (2.7s): train_loss=0.2764 train_rmse=0.0407 val_rmse=0.0433 val_r2=0.6822 val_mape=3.91%
+    ep  53 (2.6s): train_loss=0.2564 train_rmse=0.0392 val_rmse=0.0427 val_r2=0.6901 val_mape=3.85%
+    ep  54 (2.6s): train_loss=0.2461 train_rmse=0.0384 val_rmse=0.0412 val_r2=0.7113 val_mape=3.69%
+    ep  55 (2.6s): train_loss=0.2823 train_rmse=0.0411 val_rmse=0.0431 val_r2=0.6844 val_mape=3.80%
+    ep  56 (2.6s): train_loss=0.2645 train_rmse=0.0398 val_rmse=0.0422 val_r2=0.6970 val_mape=3.70%
+    ep  57 (2.7s): train_loss=0.2453 train_rmse=0.0384 val_rmse=0.0404 val_r2=0.7236 val_mape=3.54%
+    ep  58 (2.7s): train_loss=0.2651 train_rmse=0.0399 val_rmse=0.0415 val_r2=0.7079 val_mape=3.57%
+    ep  59 (2.6s): train_loss=0.2747 train_rmse=0.0406 val_rmse=0.0415 val_r2=0.7081 val_mape=3.60%
+    ep  60 (2.6s): train_loss=0.2807 train_rmse=0.0410 val_rmse=0.0376 val_r2=0.7605 val_mape=3.35%
+    ep  61 (2.7s): train_loss=0.2652 train_rmse=0.0399 val_rmse=0.0356 val_r2=0.7843 val_mape=3.22%
+    ep  62 (2.6s): train_loss=0.2672 train_rmse=0.0400 val_rmse=0.0367 val_r2=0.7717 val_mape=3.37%
+    ep  63 (2.6s): train_loss=0.2355 train_rmse=0.0376 val_rmse=0.0375 val_r2=0.7616 val_mape=3.36%
+    ep  64 (2.6s): train_loss=0.2396 train_rmse=0.0379 val_rmse=0.0382 val_r2=0.7524 val_mape=3.42%
+    ep  65 (2.6s): train_loss=0.2490 train_rmse=0.0386 val_rmse=0.0389 val_r2=0.7437 val_mape=3.48%
+    ep  66 (2.6s): train_loss=0.2492 train_rmse=0.0387 val_rmse=0.0391 val_r2=0.7399 val_mape=3.47%
+    ep  67 (2.6s): train_loss=0.2721 train_rmse=0.0404 val_rmse=0.0391 val_r2=0.7402 val_mape=3.42%
+    ep  68 (2.7s): train_loss=0.2686 train_rmse=0.0401 val_rmse=0.0404 val_r2=0.7226 val_mape=3.47%
+    ep  69 (2.6s): train_loss=0.2468 train_rmse=0.0385 val_rmse=0.0395 val_r2=0.7347 val_mape=3.43%
+    ep  70 (2.6s): train_loss=0.2560 train_rmse=0.0392 val_rmse=0.0400 val_r2=0.7283 val_mape=3.43%
+    ep  71 (2.7s): train_loss=0.2447 train_rmse=0.0383 val_rmse=0.0407 val_r2=0.7182 val_mape=3.49%
+    ep  72 (2.7s): train_loss=0.2454 train_rmse=0.0384 val_rmse=0.0410 val_r2=0.7149 val_mape=3.44%
+    ep  73 (2.6s): train_loss=0.2415 train_rmse=0.0380 val_rmse=0.0417 val_r2=0.7050 val_mape=3.51%
+    ep  74 (2.6s): train_loss=0.2413 train_rmse=0.0380 val_rmse=0.0449 val_r2=0.6576 val_mape=3.69%
+    ep  75 (2.7s): train_loss=0.2255 train_rmse=0.0368 val_rmse=0.0424 val_r2=0.6946 val_mape=3.55%
+    ep  76 (2.6s): train_loss=0.2421 train_rmse=0.0381 val_rmse=0.0419 val_r2=0.7023 val_mape=3.51%
+    ep  77 (2.6s): train_loss=0.2452 train_rmse=0.0383 val_rmse=0.0418 val_r2=0.7033 val_mape=3.52%
+    ep  78 (2.6s): train_loss=0.2396 train_rmse=0.0379 val_rmse=0.0421 val_r2=0.6988 val_mape=3.55%
+    ep  79 (2.7s): train_loss=0.2389 train_rmse=0.0379 val_rmse=0.0397 val_r2=0.7324 val_mape=3.37%
+    ep  80 (2.6s): train_loss=0.2466 train_rmse=0.0385 val_rmse=0.0404 val_r2=0.7236 val_mape=3.39%
+    ep  81 (2.6s): train_loss=0.2280 train_rmse=0.0370 val_rmse=0.0399 val_r2=0.7299 val_mape=3.33%
+    ep  82 (2.7s): train_loss=0.2198 train_rmse=0.0363 val_rmse=0.0403 val_r2=0.7241 val_mape=3.41%
+    ep  83 (2.7s): train_loss=0.2209 train_rmse=0.0364 val_rmse=0.0421 val_r2=0.6997 val_mape=3.51%
+    ep  84 (2.7s): train_loss=0.2258 train_rmse=0.0368 val_rmse=0.0412 val_r2=0.7117 val_mape=3.40%
+    ep  85 (2.7s): train_loss=0.2183 train_rmse=0.0362 val_rmse=0.0405 val_r2=0.7214 val_mape=3.29%
+    ep  86 (2.7s): train_loss=0.2049 train_rmse=0.0350 val_rmse=0.0404 val_r2=0.7232 val_mape=3.35%
+    ep  87 (2.7s): train_loss=0.1838 train_rmse=0.0332 val_rmse=0.0398 val_r2=0.7312 val_mape=3.33%
+    ep  88 (2.6s): train_loss=0.2202 train_rmse=0.0363 val_rmse=0.0402 val_r2=0.7263 val_mape=3.34%
+    ep  89 (2.7s): train_loss=0.2095 train_rmse=0.0354 val_rmse=0.0400 val_r2=0.7283 val_mape=3.33%
+    ep  90 (2.7s): train_loss=0.2281 train_rmse=0.0370 val_rmse=0.0406 val_r2=0.7197 val_mape=3.36%
+    ep  91 (2.7s): train_loss=0.2251 train_rmse=0.0367 val_rmse=0.0398 val_r2=0.7312 val_mape=3.37%
+    ep  92 (2.7s): train_loss=0.2309 train_rmse=0.0372 val_rmse=0.0401 val_r2=0.7269 val_mape=3.37%
+    ep  93 (2.7s): train_loss=0.2288 train_rmse=0.0370 val_rmse=0.0427 val_r2=0.6900 val_mape=3.50%
+    ep  94 (2.7s): train_loss=0.1906 train_rmse=0.0338 val_rmse=0.0414 val_r2=0.7095 val_mape=3.37%
+    ep  95 (2.7s): train_loss=0.1999 train_rmse=0.0346 val_rmse=0.0424 val_r2=0.6954 val_mape=3.41%
+    ep  96 (2.7s): train_loss=0.2297 train_rmse=0.0371 val_rmse=0.0409 val_r2=0.7165 val_mape=3.37%
+    ep  97 (2.6s): train_loss=0.2060 train_rmse=0.0351 val_rmse=0.0402 val_r2=0.7251 val_mape=3.32%
+    ep  98 (2.6s): train_loss=0.2030 train_rmse=0.0349 val_rmse=0.0400 val_r2=0.7288 val_mape=3.30%
+    ep  99 (2.7s): train_loss=0.2004 train_rmse=0.0347 val_rmse=0.0411 val_r2=0.7136 val_mape=3.37%
+    ep 100 (2.7s): train_loss=0.2079 train_rmse=0.0353 val_rmse=0.0404 val_r2=0.7236 val_mape=3.32%
+    ep 101 (2.6s): train_loss=0.2005 train_rmse=0.0347 val_rmse=0.0407 val_r2=0.7182 val_mape=3.37%
+    ep 102 (2.6s): train_loss=0.1945 train_rmse=0.0341 val_rmse=0.0410 val_r2=0.7150 val_mape=3.38%
+    ep 103 (2.6s): train_loss=0.2217 train_rmse=0.0365 val_rmse=0.0416 val_r2=0.7067 val_mape=3.41%
+    ep 104 (2.7s): train_loss=0.1986 train_rmse=0.0345 val_rmse=0.0419 val_r2=0.7014 val_mape=3.37%
+    ep 105 (2.7s): train_loss=0.2421 train_rmse=0.0381 val_rmse=0.0432 val_r2=0.6830 val_mape=3.48%
+    ep 106 (2.6s): train_loss=0.2383 train_rmse=0.0378 val_rmse=0.0427 val_r2=0.6902 val_mape=3.46%
+    ep 107 (2.6s): train_loss=0.2061 train_rmse=0.0352 val_rmse=0.0429 val_r2=0.6874 val_mape=3.47%
+    ep 108 (2.7s): train_loss=0.2239 train_rmse=0.0366 val_rmse=0.0423 val_r2=0.6957 val_mape=3.48%
+    ep 109 (2.6s): train_loss=0.2190 train_rmse=0.0362 val_rmse=0.0422 val_r2=0.6983 val_mape=3.45%
+    ep 110 (2.7s): train_loss=0.1959 train_rmse=0.0343 val_rmse=0.0424 val_r2=0.6955 val_mape=3.46%
+    ep 111 (2.7s): train_loss=0.2107 train_rmse=0.0355 val_rmse=0.0421 val_r2=0.6997 val_mape=3.43%
+    ep 112 (2.7s): train_loss=0.2000 train_rmse=0.0346 val_rmse=0.0423 val_r2=0.6960 val_mape=3.42%
+    ep 113 (2.6s): train_loss=0.2009 train_rmse=0.0347 val_rmse=0.0429 val_r2=0.6880 val_mape=3.50%
+    ep 114 (2.7s): train_loss=0.2173 train_rmse=0.0361 val_rmse=0.0419 val_r2=0.7016 val_mape=3.43%
+    ep 115 (2.7s): train_loss=0.2034 train_rmse=0.0349 val_rmse=0.0430 val_r2=0.6865 val_mape=3.45%
+    ep 116 (2.6s): train_loss=0.2009 train_rmse=0.0347 val_rmse=0.0414 val_r2=0.7088 val_mape=3.36%
+    ep 117 (2.7s): train_loss=0.2230 train_rmse=0.0366 val_rmse=0.0423 val_r2=0.6961 val_mape=3.41%
+    ep 118 (2.7s): train_loss=0.1851 train_rmse=0.0333 val_rmse=0.0428 val_r2=0.6890 val_mape=3.43%
+    ep 119 (2.6s): train_loss=0.2059 train_rmse=0.0351 val_rmse=0.0428 val_r2=0.6892 val_mape=3.46%
+    final: rmse=0.0356  mae=0.0218  r2=0.7843  mape=3.22%  (331.6s, best_ep=61)
+  AGG    rmse=0.0468±0.0109  r2=0.6138±0.1777

@@ -1,0 +1,247 @@
+PPTX: C:\Users\ljse2\OneDrive\바탕 화면\4-1\Bosch_plasma_etching_project\BOSCH-Plasma-Etching\docs\6조_종설_최종발표_찐.pptx
+
+Slide count: 38
+
+=== SLIDE 01 (ppt/slides/slide1.xml) ===
+[1] 반도체 식각 공정 예측을 위한 시계열 AI 모델
+[2] 종합설계프로젝트 6 조
+
+=== SLIDE 02 (ppt/slides/slide2.xml) ===
+[1] Motivation
+[2] 반도체 제조 공정에서 웨이퍼의 품질 관리는 식각 깊이 (etch depth), 산화막 두께 (oxide thickness) 등의 물리적 측정에 의존 가상 계측 (Virtual Metrology, VM) 은 이러한 물리적 측정값을 예측하는 기술 → 전수 검사 가능 , 공정 제어의 실시간성 향상
+--- NOTES ---
+N1. 반도체 제조 공정에서 웨이퍼의 품질은 식각 깊이 , 산화막 두께 등의 물리적인 측정값에 따라 달라집니다 . 그러나 이를 실제로 측정하려면 비용과 시간이 많이 소요되고 , 모든 웨이퍼에 대해 수행하기 어렵다는 문제가 있습니다 . VM 은 공정 중에 수집되는 센서 데이터로부터 이러한 물리적 측정값을 예측하는 기술로 , 전수 검사를 가능하게 하고 공정 제어의 실시간성을 높일 수 있다는 장점이 있습니다 .
+N2. 2
+
+=== SLIDE 03 (ppt/slides/slide3.xml) ===
+[1] VM 선행연구
+[2] (1) 기존 OES VM 의 한계 OES 는 원래 high-dimensional temporal signal 인데 평균 , 분산 , PCA band 등으로 축약 → temporal dynamics 손실 PCA 를 이용해 주요 wavelength 를 선택하고 , integration band 및 statistics-based / dynamics-inspired feature 를 추출하여 VM 모델을 구축 (Chien et al., 2021) (2) Deep Learning 기반 VM 기존 handcrafted feature 대신 representation learning, OES 를 2D data 자체로 활용 DeepVM 연구에서는 convolutional autoencoder 를 이용해 OES 의 temporal–spectral structure 를 자동으로 feature extraction 더 높은 예측 성능을 달성 ((Maggipinto et al., 2019)
+--- NOTES ---
+N1. 기존 반도체 식각 공정의 VM 연구에서는 OES 데이터를 이용하여 식각 후 critical dimension(CD), etch rate 등을 예측하는 연구가 활발히 진행되어 왔습니다 . 특히 OES 의 주요 wavelength 를 선택한 뒤 평균 , 최대값 , 분산 등의 통계 기반 feature 를 추출하여 PLS 나 SVR 같은 머신러닝 모델에 입력하는 방식이 주로 사용되었습니다 . 예를 들면 PCA 를 이용해 주요 wavelength 를 선택하고 , integration band 및 statistics-based / dynamics-inspired feature 를 추출하여 VM 모델을 구축하여 기존 handcrafted feature 기반 방식보다 더 높은 예측 성능을 달성한 연구 결과도 있습니다 . 하지만 기존 방식은 여전히 OES 의 고차원 temporal signal 을 feature engineering 과정에서 축약하여 사용하기 때문에 , BOSCH 공정의 cycle-to-cycle dynamics 나 temporal variation 과 같은 중요한 정보가 일부 손실된다는 한계가 있습니다 . 이후에는 OES 데이터가 시간 (time) 과 wavelength 축을 동시에 가지는 2 차원 시계열 데이터라는 점에 주목하여 , CNN 및 Autoencoder 기반의 Deep Learning VM 연구가 등장하였습니다 . 대표적으로 DeepVM 연구에서는 convolutional autoencoder 를 이용해 OES 의 temporal–spectral structure 를 자동으로 feature extraction 하여 기존 통계 기반 방법보다 더 높은 예측 성능을 달성하였습니다 . 그러나 이 방식도 주로 전체 OES 신호를 압축된 representation 으로 변환하여 사용하였기 때문에 , BOSCH 공정의 cycle-to-cycle dynamics 나 temporal variatio 과 같은 세부적인 사이클 구조 정보가 여전히 충분히 반영되지 못한다는 한계가 존재합니다 . 저희는 이런 사이클
+N2. 3
+
+=== SLIDE 04 (ppt/slides/slide4.xml) ===
+[1] Dataset
+[2] BOSCH Plasma Etch Multi-Model Dataset
+[3] Zenodo | DOI: 10.5281/zenodo.17122442 | CC-BY 4.0
+[4] 3,648
+[5] 31
+[6] 9/89
+[7] 채널
+[8] 파라미터
+[9] 포인트
+[10] 광학 방출 스펙트럼 185 ~ 884 nm, 25Hz
+[11] 공정 센서 데이터 RF Power, 가스, 압력 등
+[12] 웨이퍼 계측값 Etch Depth, Oxide 두께
+[13] OES + 공정 파라미터(X)로 Etch Depth(Y)를 예측하는 가상 계측(VM) 모델의 학습 데이터
+--- NOTES ---
+N1. Dataset 파트에 대해서 설명드리겠습니다 . 저희가 쓰는 데이터는 독일 연구소에서 실제 플라즈마 식각 장비를 돌리면서 수집한 데이터입니다 . 장비는 ICP-RIE 방식이고 , 200mm 실리콘 웨이퍼에 SF₆ 와 C₄F₈ 를 교대로 사용하는 BOSCH 공정 100 사이클을 적용했습니다 . 총 10 개 로트 , 약 100 개 웨이퍼 규모이고 , Zenodo 에 오픈 데이터로 공개되어 있습니다 . 이 데이터의 가장 큰 강점은 세 종류의 데이터가 동시에 수집되었다는 점입니다 . 첫째 , 플라즈마 안에 어떤 화학종이 있는지 빛으로 측정한 OES 데이터 3,648 채널 . 둘째 , 장비의 센서가 기록한 공정 파라미터 31 개 . 셋째 , 식각이 끝난 후 실제로 재본 식각 깊이가 웨이퍼 계측값 9 개 또는 89 개 포인트로 기록되어있습니다 . 앞의 둘이 모델의 입력이고 , 마지막이 저희가 예측하려는 정답값입니다 .
+N2. 4
+
+=== SLIDE 05 (ppt/slides/slide5.xml) ===
+[1] Dataset
+[2] 타겟 변수 (Y) 및 데이터 파이프라인
+[3] 무엇을 예측하고 , 어떻게 모델에 들어가는가
+--- NOTES ---
+N1. 그래서 저희가 예측하려는 것은 실리콘이 얼마나 깊이 파였는지입니다 . 왼쪽 그림을 보시면 , 식각 전에는 SiO ₂ 마스크가 위에 덮여 있고 그 아래 실리콘이 평평합니다 . BOSCH 공정 100 사이클을 거치면 마스크가 열린 부분으로 약 40 마이크로미터 깊이의 구멍이 파이게 됩니다 . 이 40 마이크로미터라는 값이 저희 타겟 , 즉 모델이 맞춰야 할 정답입니다 . 마스크도 일부 소모되어 0.45 마이크로미터로 얇아집니다 . 아래 표가 실제 CSV 데이터이고 , si_etch 열이 저희 타겟입니다 . 오른쪽은 전체 흐름입니다 , 식각 중 실시간으로 기록된 공정 파라미터와 OES 가 입력이 되고 , 식각 후에 잰 깊이를 정답으로 매칭해서 모델을 학습시킵니다 . 이렇게 하면 나중에는 센서 데이터만 보고도 실제로 재지 않아도 식각 깊이를 예측할 수 있게 됩니다 .
+N2. 5
+
+=== SLIDE 06 (ppt/slides/slide6.xml) ===
+[1] Pipeline- XGBoost
+--- NOTES ---
+N1. 첫 번째로 소개할 파이프라인은 XGBoost Baseline 아키텍처입니다 . 저희가 사용하는 입력 데이터는 크게 세 가지입니다 . 첫째 , OES 시계열 — 약 14,744 타임스텝에 3,648 개 파장 채널로 구성됩니다 . 둘째 , 공정 파라미터 시계열 — 약 3,245 타임스텝 , 44 개 센서 채널입니다 . 셋째 , 웨이퍼 내 측정 위치 좌표 — 89 개 포인트의 XY 좌표입니다 . 이 원시 데이터를 그대로 쓰기엔 차원이 너무 높기 때문에 , 피처 엔지니어링 단계에서 사이클 단위로 요약합니다 . OES 는 100 사이클 × 10 개 파장 밴드별로 평균을 내고 , 공정 파라미터도 100 사이클 × 44 채널 평균을 냅니다 . 각 사이클 시퀀스에 평균 · 표준편차 · 최솟값 · 최댓값 등 8 가지 통계를 적용하면 , 최종적으로 OES 80 개 , 공정 352 개 , XY 2 개 — 총 434 개 피처가 만들어집니다 . 이 피처 벡터를 XGBoost Regressor 에 입력해서 si_etch 와 oxide_etch 를 동시에 예측합니다 . 트리 수 800 개 , max_depth 6, learning_rate 0.09 로 설정했습니다 . 이 모델이 딥러닝 모델과 비교할 성능 기준선 역할을 합니다 .
+N2. 6
+
+=== SLIDE 07 (ppt/slides/slide7.xml) ===
+[1] Pipeline-DL
+--- NOTES ---
+N1. 초기 구성은 이렇게
+N2. 7
+
+=== SLIDE 08 (ppt/slides/slide8.xml) ===
+[1] Pipeline-DL
+--- NOTES ---
+N1. 처음에는 XGBoost 와 DL, 앙상블까지 고려했지만 교수님 피드백 이후에는 단일 DL 구조가 실제로 의미 있는지 먼저 검증하는 방향으로 정리 ** 중간발표랑 변경점은 Spatial 정보를 따로 빼서 개선한걸 보여주고 싶어서 뺐습니다
+N2. 8
+
+=== SLIDE 09 (ppt/slides/slide9.xml) ===
+[1] 문제 1. DL 이 Si 를 못 맞추는 문제
+[2] XGB baseline은 Si를 이미 매우 잘 예측
+--- NOTES ---
+N1. 근데 이상하게 Si 를 못맞추더라
+N2. 9
+
+=== SLIDE 10 (ppt/slides/slide10.xml) ===
+[1] Target Within-wafer std Between-wafer std Spatial baseline R² Si_etch 3.61 μ m (99%) 0.40 μ m (1%) 0.985 Oxide_etch 0.064 μ m (68%) 0.044 μ m (32%) 0.156
+[2] EDA - Si_etch
+--- NOTES ---
+N1. 이상해서 EDA 분석해보니 애초에 XY 에 의존하더라 ~
+N2. 10
+
+=== SLIDE 11 (ppt/slides/slide11.xml) ===
+[1] Pipeline-DL
+--- NOTES ---
+N1. 그래서 FiLM 적용함 두 번째 파이프라인은 저희가 핵심 기여로 제안하는 Cycle-Aware DL 아키텍처입니다 . 2D-CNN, Bidirectional LSTM, 그리고 FiLM 모듈을 결합한 구조입니다 . XGBoost 와 가장 큰 차이점은 , 사이클 내부의 시간 파형을 그대로 학습에 활용한다는 점입니다 . OES 입력은 100 사이클 × 128 타임스텝 × 3,648 파장으로 구성되고 , 이를 2D-CNN OES Encoder 에 통과시켜 사이클당 128 차원 임베딩을 얻습니다 . 공정 파라미터도 100 사이클 × 30 스텝 × 31 채널을 동일한 구조의 2D-CNN Process Encoder 로 처리해 사이클당 64 차원 임베딩을 만듭니다 . 여기서 핵심은 CNN 의 가중치를 100 사이클이 공유한다는 점입니다 . 즉 , 각 사이클을 독립적으로 동일한 인코더로 처리하는 구조입니다 . 두 임베딩을 이어 붙인 뒤 FC 와 LayerNorm 을 거쳐 100 × 128 시퀀스를 만들고 , 이를 Bidirectional LSTM 에 입력합니다 . LSTM 이 사이클 간 시간적 변화를 학습하는 부분입니다 . LSTM 출력을 Mean Pooling 으로 하나의 256 차원 벡터로 압축하고 , FiLM 모듈로 컨디셔닝합니다 . FiLM 은 γ 와 β 스케일링 파라미터를 통해 웨이퍼 전체의 공정 상태를 표현하는 역할을 합니다 . 마지막으로 , 측정 위치 XY 좌표를 Fourier Encoder 로 인코딩해서 공간 정보를 결합하고 , 최종 Regression Head 에서 89 개 측정 포인트 각각에 대해 si_etch 와 oxide_etch 를 예측합니다 .
+N2. 11
+
+=== SLIDE 12 (ppt/slides/slide12.xml) ===
+[1] FiLM modulation
+--- NOTES ---
+N1. 원래는 그냥 xy concat 해서 xy 정보가 차지하는 비중이 너무 미미함 . 근데 FiLM 은 전체에 투영해서 이를 개선
+N2. 12
+
+=== SLIDE 13 (ppt/slides/slide13.xml) ===
+[1] FiLM modulation
+--- NOTES ---
+N1. 적용했더니 성능 회복함
+N2. 13
+
+=== SLIDE 14 (ppt/slides/slide14.xml) ===
+[1] Si_etch wafer-map
+--- NOTES ---
+N1. 시각화
+N2. 14
+
+=== SLIDE 15 (ppt/slides/slide15.xml) ===
+[1] 문제 2. 특정 Fold 에서 성능 붕괴
+
+=== SLIDE 16 (ppt/slides/slide16.xml) ===
+[1] 원인 분석
+--- NOTES ---
+N1. 이상치들이 유독 많다 . Fold4 의 경우 한 wafer 에 대한 예측치를 특정 값 중심으로 뭉쳐버린다 . 학습 초반에 피크를 찍고 계속 감소 -> overfit 의심 ** 가운데 그래프에서 fold4 의 predicted spread / true spread 가 0.19x 밖에 안 됨 . 다른 fold 는 0.86~1.02 수준이라 예측 분산이 실제 분산을 어느 정도 따라가는데 , fold4 만 예측값이 거의 한 점 근처로 뭉침 . 왼쪽 산점도에서도 fold4 빨간 점들이 true wafer mean 은 넓게 퍼져 있는데 predicted wafer mean 은 0.64~0.66 근처로 눌리는 경향이 보임 . 즉 , fold4 는 단순 오차가 아니라 wafer 간 oxide level 차이를 DL representation 이 못 구분한 문제로 추측 Fold2 는 fold4 와 다름 . Fold2 는 predicted spread / true spread 가 0.86x 라서 fold4 처럼 예측 분산이 완전히 죽은 건 아님 . 대신 오른쪽 learning curve 에서 fold2 validation RMSE 가 epoch 4 근처에서 가장 좋고 이후 흔들리거나 악화 됨 . train RMSE 는 계속 내려가는데 validation 은 안정적으로 개선되지 않으니까 , fold2 는 representation collapse 보다는 early overfitting / validation fold 에 특이 wafer 가 있는 문제로 추측
+N2. 16
+
+=== SLIDE 17 (ppt/slides/slide17.xml) ===
+[1] Improve_1 : OES_top_k
+--- NOTES ---
+N1. 해결법 적용 1 Oes top k 각 fold 의 train set 에서만 oxide etch target 과 OES wavelength 별 summary statistic 사이의 correlation 을 계산하고 , 상관성이 높은 wavelength 상위 k 개만 선택 최종 모델에서는 top_k =256, stat= late_mean 을 사용 각 wavelength 에 대해 후반 cycle 구간의 평균 intensity 를 대표값으로 만들고 , 이것이 oxide etch 와 얼마나 관련 있는지 본 뒤 상위 256 개 channel 만 남김 .
+N2. 17
+
+=== SLIDE 18 (ppt/slides/slide18.xml) ===
+[1] Improve_2 : Auxiliary wafer-mean loss
+--- NOTES ---
+N1. Auxiliary wafer-mean loss DL 모델은 wafer 하나에서 89 개의 측정 point 를 예측 -> 이 방식만 사용하면 모델이 각 point 의 오차를 줄이는 데 집중하면서 , wafer 전체가 high etch 인지 low etch 인지 같은 전역적인 wafer-level 상태를 충분히 안정적으로 학습하지 못할 수 있음 . -> 특히 fold 4 에서 일부 high-mode wafer 들이 거의 비슷한 예측값으로 몰리는 collapse 현상이 있었는데 , 이는 중간 representation 인 wafer_repr 가 wafer 간 global etch level 차이를 잘 구분하지 못한다는 신호로 볼 수 있음 . -> 기존에는 최종 head 가 wafer_repr + XY 를 이용해 89 개 point 의 target 을 예측함 . 여기에 추가로 , wafer_repr 만 보고 해당 wafer 의 평균 oxide etch 값을 예측하는 보조 head 를 붙임 -> total_loss = point_prediction_loss + aux_weight * wafer_mean_loss -> wafer 전체의 etch level 을 직접적으로 담도록 Loss 에 반영 최종 설정에서는 aux_weight = 0.3 을 사용
+N2. 18
+
+=== SLIDE 19 (ppt/slides/slide19.xml) ===
+[1] Improve_3 : Mixup
+--- NOTES ---
+N1. wafer 단위로 적용했다 .( wafer-level mixup ) 즉 , 두 wafer 의 OES tensor, Process tensor, XY feature, target 을 같은 비율로 섞었다 . 이렇게 하면 모델은 실제 wafer A 와 wafer B 만 보는 것이 아니라 , 두 wafer 사이의 중간 상태도 학습하게 된다 .
+N2. 19
+
+=== SLIDE 20 (ppt/slides/slide20.xml) ===
+[1] Improve_4 : Weight EMA
+--- NOTES ---
+N1. 학습 Weight 가 너무 들쭉날쭉하면 RMSE 도 요동치게 된다 . -> 운 좋게 한 번 튄 noise 바닥을 best epoch 로 저장할 수 있음 -> 일반화 성능 저하 -> 스무스하게 만든다 . EMA 는 Exponential Moving Average 의 약자 학습 중인 모델의 weight 를 그대로 쓰는 대신 , 과거 weight 들을 지수이동평균으로 누적한 별도의 shadow model 을 사용 ] 지수이동평균이므로 최근의 weight 를 더 크게 반영 -> 의도한 효과
+N2. 20
+
+=== SLIDE 21 (ppt/slides/slide21.xml) ===
+[1] Final Pipeline
+--- NOTES ---
+N1. 최종 파이프라인 다이어그램 아키텍쳐적인 개선 : Aux 와 OES top_k Dataset 전처리 및 train process 개선 : Mixup , EMA
+N2. 21
+
+=== SLIDE 22 (ppt/slides/slide22.xml) ===
+[1] Results
+--- NOTES ---
+N1. 개선 과정
+N2. 22
+
+=== SLIDE 23 (ppt/slides/slide23.xml) ===
+[1] Results
+--- NOTES ---
+N1. 최종 모델의 fold 별 히트맵
+N2. 23
+
+=== SLIDE 24 (ppt/slides/slide24.xml) ===
+[1] Results
+--- NOTES ---
+N1. 최종모델의 오차에 대한 통계 만약 residual 이 정규분포가 아니라 한쪽으로 쏠려있었으면 그 부분을 공략해볼 수 있었을텐데 그렇지는 않은듯
+N2. 24
+
+=== SLIDE 25 (ppt/slides/slide25.xml) ===
+[1] Results
+--- NOTES ---
+N1. 최종 모델의 에러맵인데 여기서 알 수 있는것이 딱히 있는지는 모르겠음 . 그냥 시각화 자료정도의 의미 ..?
+N2. 25
+
+=== SLIDE 26 (ppt/slides/slide26.xml) ===
+[1] Results
+--- NOTES ---
+N1. 초기 DL 과의 비교 Fold2, 4 에서 꽤 유의미한 개선
+N2. 26
+
+=== SLIDE 27 (ppt/slides/slide27.xml) ===
+[1] Results
+--- NOTES ---
+N1. 베이스라인인 XGB 와의 비교 꽤 유의미한 상승 , 하지만 fold4 에서는 여전히 뒤쳐짐 DL 에서 상당히 어려워하던 fold4 가 xgb 는 2 번째로 성능이 높다는것이 흥미로운 포인트
+N2. 27
+
+=== SLIDE 28 (ppt/slides/slide28.xml) ===
+[1] Results
+--- NOTES ---
+N1. XGB 와 최종 모델간의 모든 포인트 비교
+N2. 28
+
+=== SLIDE 29 (ppt/slides/slide29.xml) ===
+[1] Limitation
+--- NOTES ---
+N1. Lot 단위 강건성 부족
+N2. 29
+
+=== SLIDE 30 (ppt/slides/slide30.xml) ===
+[1] Limitation
+[2] 4. 해석 분석이 아직 최종 best 모델 전체로 확장되지 않음 SHAP 및 gradient attribution 분석은 수행되었지만 , 최종 best 모델 기준으로 모든 fold 에 대해 일관성 있게 정리되지는 않음 . 어떤 OES wavelength, cycle 구간 , process sensor 가 oxide 예측에 중요한지 더 체계적으로 보여줄 필요가 있음 .
+[3] 3. VM 의 실제 운영 관점 검증 부족 실제 공정 적용을 위해서는 inference speed, wafer 별 실시간 예측 가능성 , 이상 wafer 탐지와의 연계 등이 추가로 검토되어야 함 .
+--- NOTES ---
+N1. 현재 모델은 DL Multimodal 구조로 oxide_etch R² 0.734 를 달성했지만 , 아키텍처 측면에서 아직 개선할 수 있는 여지가 있다고 판단했습니다 . 크게 네 가지 방향으로 정리하겠습니다 . 첫 번째로 , 레이블 데이터 부족 문제입니다 . 현재 레이블이 있는 웨이퍼는 88 개로 , 딥러닝 모델을 충분히 학습시키기에는 적은 수입니다 . 하지만 OES 자체 데이터는 14,744 개 , 파장 3,648 개로 레이블 없이도 풍부하게 존재합니다 . 따라서 이 데이터를 활용해 Mask-and-Reconstruct 또는 Contrastive Learning 방식으로 인코더를 먼저 사전훈련한 뒤 , 소수의 레이블 데이터로 fine-tuning 하는 방향을 검토하고 있습니다 . 두 번째로 , 예측 불확실성 정량화가 아직 이루어지지 않고 있습니다 . 현재 모델은 예측값 하나만 출력하기 때문에 , 산업 현장에서 해당 예측을 얼마나 신뢰할 수 있는지 판단하기 어렵습니다 . 이를 해결하기 위해 Deep Ensembles, MC Dropout, Conformal Prediction 을 활용하여 예측값과 신뢰구간을 함께 출력할 수 있도록 개선할 계획입니다 . 세 번째로 , 현재 BiLSTM + Mean Pooling 구조에서는 100 개 사이클 중 어떤 사이클이 예측에 중요하게 작용했는지 알 수 없습니다 . Gradient Attribution 으로 일부 해석을 시도할 수 있지만 간접적인 방법에 불과합니다 . 이를 Transformer + Cycle Positional Encoding 으로 대체하면 Attention weight 를 통해 사이클 중요도를 직접 시각화할 수 있습니다 . 다만 데이터셋이 작아 Transformer 단독 학습이 어려울 수 있기 때문에 , 앞서 언급한 자기지도 사전훈련과 연계하여 진행할 계획입니다 . 마지막으로 , 현재 모델은 물리적 제약 없이 순수하게 데이터만으로 학습하기 때문에 , 식각 깊이가 사이클 진행에 따라 반드시 증가해야 한다는 공정의 기본 성질이 보장되지 않습니다 . 따라서 손실 함수에 단조증가 제약 , 사이클 간 Smoothness 정규화 , 그리고 OES 에서 관측되는 F 원자와 CF 종의 농도 비율을 반영한 화학 관계 제약을 추가하여 물리적으로 타당한 예측을 유도할 계획입니다 . 정리하면 , 향후 연구는 자기지도학습 사전훈련을 통한 데이터 부족 극복 , 불확실성 정량화를 통한 배포 신뢰성 확보 , Transformer 기반 해석 가능성 향상 , 물리 제약 적용을 중심으로 진행할 예정입니다 .
+N2. 30
+
+=== SLIDE 31 (ppt/slides/slide31.xml) ===
+[1] Expected Impact
+[2] 예측 결과뿐 아니라 , 특정 cycle 구간의 이상 신호를 추적하여 공정 drift 나 chamber conditioning 문제를 해석할 수 있음
+--- NOTES ---
+N1. 일반 VM 은 보통 결과값 예측 에서 끝나는데 , cycle-aware 모델은 cycle 단위로 입력을 나누니까 나중에 attribution/attention 을 붙이면 , 불량 또는 예측 오차가 발생했을 때 , 어떤 cycle 구간에서 이상 신호가 나타났는지 추적할 수 있다 .
+N2. 31
+
+=== SLIDE 32 (ppt/slides/slide32.xml) ===
+[1] Expected Impact
+[2] cycle 별 OES/Process signal 을 인코딩하고 cycle 간 drift 를 학습 -> 다른 Cycle 공정으로의 확장 가능성
+--- NOTES ---
+N1. ALD: 금속 source gas + 반응 gas 가 번갈아 들어가며 박막을 쌓는 cycle 공정 PEALD: 금속 source gas + plasma gas 가 번갈아 들어가며 박막을 쌓는 cycle 공정 ALE: 표면을 바꾸는 gas + 제거 plasma 가 반복되며 원자층 단위로 깎는 cycle 공정
+N2. 32
+
+=== SLIDE 33 (ppt/slides/slide33.xml) ===
+[1] 참고문헌
+[2] [1] M. A. Sayyed, T. Seifert, S. Zieger, S. Schwarzenberg, A. Deshmukh, M. Haase, and J. Langer, "A multi-model dataset for BOSCH plasma-etching: Optical emission spectra, process parameters, and wafer measurements for data-driven plasma modeling," Zenodo , 2025. [Online]. Available: https://doi.org/10.5281/zenodo.17122442 [2] S. Lynn, J. Ringwood, E. Ragnoli , S. McLoone, and N. MacGearailt , "Virtual metrology for plasma etch using tool variables," in Proc. IEEE/SEMI Adv. Semicond . Manuf. Conf. (ASMC) , 2009. [3] S. A. Lynn, J. Ringwood, and N. MacGearailt , "Global and local virtual metrology models for a plasma etch process," IEEE Trans. Semicond . Manuf. , vol. 25, no. 1, pp. 94–103, 2012. [4] G. A. Susto , S. Pampuri , A. Schirru, A. Beghi , and G. De Nicolao, "Multi-step virtual metrology for semiconductor manufacturing: A multilevel and regularization methods-based approach," Comput . Oper. Res. , vol. 53, pp. 328–337, 2015. [5] S. Hochreiter and J. Schmidhuber , "Long short-term memory," Neural Comput . , vol. 9, no. 8, pp. 1735–1780, 1997. [6] M. Schuster and K. K. Paliwal, "Bidirectional recurrent neural networks," IEEE Trans. Signal Process. , vol. 45, no. 11, pp. 2673–2681, 1997. [7] S. Ioffe and C. Szegedy, "Batch normalization: Accelerating deep network training by reducing internal covariate shift," in Proc. 32nd Int. Conf. Mach. Learn. (ICML) , vol. 37, 2015, pp. 448–456. [8] D. Hendrycks and K. Gimpel, "Gaussian error linear units (GELUs)," arXiv:1606.08415 , 2016.
+--- NOTES ---
+N1. 33
+
+=== SLIDE 34 (ppt/slides/slide34.xml) ===
+[1] 참고문헌
+[2] [9] E. Perez, F. Strub, H. de Vries, V. Dumoulin, and A. Courville, " FiLM : Visual reasoning with a general conditioning layer," in Proc. 32nd AAAI Conf. Artif . Intell. (AAAI) , 2018. [10] M. Tancik , P. P. Srinivasan, B. Mildenhall, S. Fridovich -Keil, N. Raghavan, U. Singhal, R. Ramamoorthi, J. T. Barron, and R. Ng, "Fourier features let networks learn high frequency functions in low dimensional domains," in Adv. Neural Inf. Process. Syst. ( NeurIPS ) , vol. 33, 2020. [11] R. Caruana, "Multitask learning," Mach. Learn. , vol. 28, no. 1, pp. 41–75, 1997. [12] B. T. Polyak and A. B. Juditsky , "Acceleration of stochastic approximation by averaging," SIAM J. Control Optim . , vol. 30, no. 4, pp. 838–855, 1992. [13] N. Srivastava, G. Hinton, A. Krizhevsky , I. Sutskever , and R. Salakhutdinov , "Dropout: A simple way to prevent neural networks from overfitting," J. Mach. Learn. Res. , vol. 15, no. 1, pp. 1929–1958, 2014. [14] I. Loshchilov and F. Hutter, "SGDR: Stochastic gradient descent with warm restarts," in Proc. Int. Conf. Learn. Represent. (ICLR) , 2017. [15] H. Zhang, M. Cisse, Y. N. Dauphin, and D. Lopez-Paz, " mixup : Beyond empirical risk minimization," in Proc. Int. Conf. Learn. Represent. (ICLR) , 2018.
+--- NOTES ---
+N1. 34
+
+=== SLIDE 35 (ppt/slides/slide35.xml) ===
+[1] 참고문헌
+[2] [16] I. Loshchilov and F. Hutter, "Decoupled weight decay regularization," in Proc. Int. Conf. Learn. Represent. (ICLR) , 2019. [17] T. Chen and C. Guestrin , " XGBoost : A scalable tree boosting system," in Proc. 22nd ACM SIGKDD Int. Conf. Knowl . Discov . Data Min. (KDD) , 2016, pp. 785–794. [18] S. M. Lundberg and S.-I. Lee, "A unified approach to interpreting model predictions," in Adv. Neural Inf. Process. Syst. ( NeurIPS ) , vol. 30, 2017. [19] L. van der Maaten and G. Hinton, "Visualizing data using t-SNE," J. Mach. Learn. Res. , vol. 9, pp. 2579–2605, 2008. [20] L. McInnes, J. Healy, and J. Melville, "UMAP: Uniform manifold approximation and projection for dimension reduction," arXiv:1802.03426 , 2018. [21] F. Pedregosa, G. Varoquaux , A. Gramfort , V. Michel, B. Thirion, O. Grisel, et al., "Scikit-learn: Machine learning in Python," J. Mach. Learn. Res. , vol. 12, pp. 2825–2830, 2011. [22] A. Paszke , S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan, et al., " PyTorch : An imperative style, high-performance deep learning library," in Adv. Neural Inf. Process. Syst. ( NeurIPS ) , vol. 32, 2019. [23] T. Akiba, S. Sano, T. Yanase, T. Ohta, and M. Koyama, " Optuna : A next-generation hyperparameter optimization framework," in Proc. 25th ACM SIGKDD Int. Conf. Knowl . Discov . Data Min. (KDD) , 2019, pp. 2623–2631.
+--- NOTES ---
+N1. 35
+
+=== SLIDE 36 (ppt/slides/slide36.xml) ===
+[1] 참고문헌
+[2] [24] K.-C. Chien, C.-H. Chang, and D. Djurdjanovic , "Virtual metrology modeling of reactive ion etching based on statistics-based and dynamics-inspired spectral features," J. Vac. Sci. Technol. B , vol. 39, no. 6, 064003, 2021. [25] M. Maggipinto, A. Beghi , S. McLoone, and G. A. Susto , " DeepVM : A deep learning-based approach with automatic feature extraction for 2D input data virtual metrology," J. Process Control , vol. 84, pp. 24–34, 2019.
+--- NOTES ---
+N1. 36
+
+=== SLIDE 37 (ppt/slides/slide37.xml) ===
+[1] Thank You
+
+=== SLIDE 38 (ppt/slides/slide38.xml) ===
+[1] Limitation 해결방안
+[2] 4. 해석 분석이 아직 최종 best 모델 전체로 확장되지 않음 • 최종 best 모델 기준 5-fold 전체 feature importance 분석 • 주요 OES wavelength, cycle 구간 , process sensor 기여도 정리 • fold 별 중요 feature 일관성 비교 및 물리적 해석 보강 • ALD · PEALD · ALE 등의 다른 공정에도 반복 cycle 공정으로 확장
+[3] 3. VM 의 실제 운영 관점 검증 부족 • wafer 별 inference speed 및 실시간 예측 가능성 평가 • 이상 wafer 탐지 결과와 VM 예측값 연계 • 공정 모니터링 시스템 적용을 위한 threshold / alarm 기준 검토
+--- NOTES ---
+N1. 현재 모델은 DL Multimodal 구조로 oxide_etch R² 0.734 를 달성했지만 , 아키텍처 측면에서 아직 개선할 수 있는 여지가 있다고 판단했습니다 . 크게 네 가지 방향으로 정리하겠습니다 . 첫 번째로 , 레이블 데이터 부족 문제입니다 . 현재 레이블이 있는 웨이퍼는 88 개로 , 딥러닝 모델을 충분히 학습시키기에는 적은 수입니다 . 하지만 OES 자체 데이터는 14,744 개 , 파장 3,648 개로 레이블 없이도 풍부하게 존재합니다 . 따라서 이 데이터를 활용해 Mask-and-Reconstruct 또는 Contrastive Learning 방식으로 인코더를 먼저 사전훈련한 뒤 , 소수의 레이블 데이터로 fine-tuning 하는 방향을 검토하고 있습니다 . 두 번째로 , 예측 불확실성 정량화가 아직 이루어지지 않고 있습니다 . 현재 모델은 예측값 하나만 출력하기 때문에 , 산업 현장에서 해당 예측을 얼마나 신뢰할 수 있는지 판단하기 어렵습니다 . 이를 해결하기 위해 Deep Ensembles, MC Dropout, Conformal Prediction 을 활용하여 예측값과 신뢰구간을 함께 출력할 수 있도록 개선할 계획입니다 . 세 번째로 , 현재 BiLSTM + Mean Pooling 구조에서는 100 개 사이클 중 어떤 사이클이 예측에 중요하게 작용했는지 알 수 없습니다 . Gradient Attribution 으로 일부 해석을 시도할 수 있지만 간접적인 방법에 불과합니다 . 이를 Transformer + Cycle Positional Encoding 으로 대체하면 Attention weight 를 통해 사이클 중요도를 직접 시각화할 수 있습니다 . 다만 데이터셋이 작아 Transformer 단독 학습이 어려울 수 있기 때문에 , 앞서 언급한 자기지도 사전훈련과 연계하여 진행할 계획입니다 . 마지막으로 , 현재 모델은 물리적 제약 없이 순수하게 데이터만으로 학습하기 때문에 , 식각 깊이가 사이클 진행에 따라 반드시 증가해야 한다는 공정의 기본 성질이 보장되지 않습니다 . 따라서 손실 함수에 단조증가 제약 , 사이클 간 Smoothness 정규화 , 그리고 OES 에서 관측되는 F 원자와 CF 종의 농도 비율을 반영한 화학 관계 제약을 추가하여 물리적으로 타당한 예측을 유도할 계획입니다 . 정리하면 , 향후 연구는 자기지도학습 사전훈련을 통한 데이터 부족 극복 , 불확실성 정량화를 통한 배포 신뢰성 확보 , Transformer 기반 해석 가능성 향상 , 물리 제약 적용을 중심으로 진행할 예정입니다 .
+N2. 38

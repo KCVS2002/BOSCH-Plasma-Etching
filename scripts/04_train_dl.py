@@ -39,13 +39,16 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.data import (
-    Normalizer,
     WaferCycleStore,
     WaferDataset,
+    dl_normalized_cache_root,
+    dl_normalizer_cache_root,
+    dl_tensor_cache_root,
 )
 from src.evaluation import aggregate_folds, load_split, regression_metrics
 from src.features import (
     compute_oes_wavelength_scores,
+    oes_score_cache_path,
     select_top_k_wavelengths,
 )
 from src.models import make_model
@@ -61,6 +64,75 @@ def _load_measurements(cache_root: Path) -> pd.DataFrame:
     if pq.exists():
         return pd.read_parquet(pq)
     return pd.read_csv(cache_root / "measurements.csv")
+
+
+def _resolve_cache_path(cache_root: Path, value: str | Path | None) -> Path | None:
+    if value is None:
+        return None
+    path = Path(value)
+    return path if path.is_absolute() else cache_root / path
+
+
+def _dl_cache_paths(cache_root: Path, cfg: dict) -> dict:
+    data_cfg = cfg["data"]
+    cache_cfg = data_cfg.get("dl_cache") or {}
+    mode = str(cache_cfg.get("mode", "auto")).lower()
+    if mode in {"off", "false"}:
+        mode = "none"
+    if mode not in {"auto", "none", "tensors", "normalizers", "normalized"}:
+        raise ValueError(
+            "data.dl_cache.mode must be one of: auto, none, tensors, normalizers, normalized"
+        )
+
+    t_o = int(data_cfg["t_o"])
+    t_p = int(data_cfg["t_p"])
+    split_file = data_cfg["split_file"]
+    xgb_feat_names = data_cfg.get("xgb_feat_names") or None
+    per_wafer_norm = bool(data_cfg.get("per_wafer_norm", False))
+
+    tensor_root = _resolve_cache_path(cache_root, cache_cfg.get("tensor_dir"))
+    normalizer_root = _resolve_cache_path(cache_root, cache_cfg.get("normalizer_dir"))
+    normalized_root = _resolve_cache_path(cache_root, cache_cfg.get("normalized_dir"))
+
+    if mode in {"auto", "tensors", "normalizers", "normalized"} and tensor_root is None:
+        tensor_root = dl_tensor_cache_root(cache_root, t_o=t_o, t_p=t_p)
+    if mode in {"auto", "normalizers", "normalized"} and normalizer_root is None:
+        normalizer_root = dl_normalizer_cache_root(
+            cache_root,
+            t_o=t_o,
+            t_p=t_p,
+            split_file=split_file,
+            xgb_feat_names=xgb_feat_names,
+        )
+    if mode in {"auto", "normalized"} and normalized_root is None:
+        normalized_root = dl_normalized_cache_root(
+            cache_root,
+            t_o=t_o,
+            t_p=t_p,
+            split_file=split_file,
+            per_wafer_norm=per_wafer_norm,
+            xgb_feat_names=xgb_feat_names,
+        )
+
+    requested_mode = mode
+    if mode == "auto":
+        if normalized_root is not None and (normalized_root / "manifest.json").exists():
+            mode = "normalized"
+        elif normalizer_root is not None and (normalizer_root / "manifest.json").exists():
+            mode = "normalizers"
+        elif tensor_root is not None and (tensor_root / "manifest.json").exists():
+            mode = "tensors"
+        else:
+            mode = "none"
+
+    return {
+        "mode": mode,
+        "requested_mode": requested_mode,
+        "require": bool(cache_cfg.get("require", requested_mode not in {"auto", "none"})),
+        "tensor_root": tensor_root,
+        "normalizer_root": normalizer_root,
+        "normalized_root": normalized_root,
+    }
 
 
 def _make_loss(name: str) -> nn.Module:
@@ -240,12 +312,29 @@ def train_one_fold(
 
     last_fold = getattr(store, "_last_fitted_fold", None)
     if last_fold != fold:
-        log(f"    [fold-norm] fit on {len(train_keys)} train wafers (fold {fold})...")
         t_n0 = time.time()
-        store.fit_normalizers(train_keys)
-        store.normalize_all(drop_raw=False, progress=False)
+        fold_keys = sorted(set(train_keys) | set(val_keys))
+        if store.normalized_cache_root is not None:
+            log(f"    [fold-norm] loading normalized cache for fold {fold}...")
+            if store.load_cached_normalized(fold, fold_keys):
+                source = "normalized-cache"
+            else:
+                log(f"    [fold-norm] normalized cache missing; falling back to fit/apply")
+                store.fit_normalizers(train_keys)
+                store.normalize_all(drop_raw=False, progress=False)
+                source = "fit"
+        else:
+            loaded_stats = store.load_cached_normalizers(fold)
+            if loaded_stats:
+                log(f"    [fold-norm] loaded normalizer cache for fold {fold}; applying...")
+                source = "normalizer-cache"
+            else:
+                log(f"    [fold-norm] fit on {len(train_keys)} train wafers (fold {fold})...")
+                store.fit_normalizers(train_keys)
+                source = "fit"
+            store.normalize_all(drop_raw=False, progress=False)
         store._last_fitted_fold = fold
-        log(f"    [fold-norm] done ({time.time()-t_n0:.1f}s)")
+        log(f"    [fold-norm] done via {source} ({time.time()-t_n0:.1f}s)")
     else:
         log(f"    [fold-norm] reusing fold {fold} fit from previous target")
 
@@ -267,14 +356,25 @@ def train_one_fold(
         t_b = time.time()
         log(f"    [oes-band] correlation selection: stat={stat}, top_k={top_k}, "
             f"train_wafers={len(train_keys)}")
+        late_start = int(sel_cfg.get("late_start_cycle", 80))
+        early_end = int(sel_cfg.get("early_end_cycle", 20))
+        score_cache = oes_score_cache_path(
+            store.cache_root,
+            train_keys=train_keys,
+            target=target,
+            stat=stat,
+            late_start_cycle=late_start,
+            early_end_cycle=early_end,
+        )
         scores = compute_oes_wavelength_scores(
             cache_root=store.cache_root,
             train_keys=train_keys,
             meas=store.meas,
             target=target,
             stat=stat,
-            late_start_cycle=int(sel_cfg.get("late_start_cycle", 80)),
-            early_end_cycle=int(sel_cfg.get("early_end_cycle", 20)),
+            late_start_cycle=late_start,
+            early_end_cycle=early_end,
+            cache_path=score_cache,
         )
         oes_band_idx = select_top_k_wavelengths(scores, top_k=top_k)
         log(f"    [oes-band] selected {len(oes_band_idx)}/{len(scores)} wavelengths "
@@ -621,6 +721,7 @@ def main() -> None:
     cache_root = PROJECT_ROOT / "cache" / cfg["data"]["cache_version"]
     meas = _load_measurements(cache_root)
     split = load_split(cache_root / cfg["data"]["split_file"])
+    dl_cache = _dl_cache_paths(cache_root, cfg)
     # Priority: CLI --folds > CLI --limit-folds > config experiment.limit_folds > default 1
     cfg_limit = cfg["experiment"].get("limit_folds", 1)
     cli_limit = args.limit_folds
@@ -637,6 +738,16 @@ def main() -> None:
         fold_ids = list(range(n_folds))
     log(f"Cache: {cache_root.relative_to(PROJECT_ROOT)}  |  split: {cfg['data']['split_file']} "
         f"({split.method}, running folds {fold_ids} of {split.n_folds})")
+    if dl_cache["requested_mode"] == "auto":
+        log(f"DL cache auto mode resolved to: {dl_cache['mode']}")
+    if dl_cache["mode"] != "none":
+        log(f"DL cache mode: {dl_cache['mode']}  |  require={dl_cache['require']}")
+        if dl_cache["tensor_root"] is not None:
+            log(f"  tensor cache: {dl_cache['tensor_root'].relative_to(PROJECT_ROOT)}")
+        if dl_cache["normalizer_root"] is not None:
+            log(f"  normalizer cache: {dl_cache['normalizer_root'].relative_to(PROJECT_ROOT)}")
+        if dl_cache["normalized_root"] is not None:
+            log(f"  normalized cache: {dl_cache['normalized_root'].relative_to(PROJECT_ROOT)}")
 
     targets = list(cfg["data"]["targets"])
     log(f"Targets: {targets}  |  modality: {cfg['data']['modality']}")
@@ -657,13 +768,37 @@ def main() -> None:
         t_p=int(cfg["data"]["t_p"]),
         xgb_feat_names=xgb_feat_names,
         per_wafer_norm=per_wafer_norm,
+        tensor_cache_root=(
+            dl_cache["tensor_root"]
+            if dl_cache["mode"] in {"tensors", "normalizers"}
+            else None
+        ),
+        tensor_cache_required=(
+            dl_cache["require"] and dl_cache["mode"] in {"tensors", "normalizers"}
+        ),
+        normalizer_cache_root=(
+            dl_cache["normalizer_root"] if dl_cache["mode"] == "normalizers" else None
+        ),
+        normalizer_cache_required=(
+            dl_cache["require"] and dl_cache["mode"] == "normalizers"
+        ),
+        normalized_cache_root=(
+            dl_cache["normalized_root"] if dl_cache["mode"] == "normalized" else None
+        ),
+        normalized_cache_required=(
+            dl_cache["require"] and dl_cache["mode"] == "normalized"
+        ),
     )
     t_a = time.time()
     store.discover_common_proc_channels(all_keys)
     t_disc = time.time() - t_a
-    t_a = time.time()
-    store.load_wafers(all_keys)
-    t_load = time.time() - t_a
+    load_raw_setup = dl_cache["mode"] != "normalized"
+    if load_raw_setup:
+        t_a = time.time()
+        store.load_wafers(all_keys)
+        t_load = time.time() - t_a
+    else:
+        t_load = 0.0
     log(f"[setup] done in {time.time()-t_setup:.1f}s  "
         f"(discover={t_disc:.1f} load={t_load:.1f})")
     log(f"[setup] proc channels kept: {store.n_proc_channels}")

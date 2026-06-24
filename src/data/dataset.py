@@ -18,6 +18,7 @@ Normalization:
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -220,6 +221,12 @@ class WaferCycleStore:
         proc_keep_channels: Sequence[str] | None = None,
         xgb_feat_names: Sequence[str] | None = None,
         per_wafer_norm: bool = False,
+        tensor_cache_root: Path | None = None,
+        tensor_cache_required: bool = False,
+        normalizer_cache_root: Path | None = None,
+        normalizer_cache_required: bool = False,
+        normalized_cache_root: Path | None = None,
+        normalized_cache_required: bool = False,
     ):
         self.cache_root = Path(cache_root)
         self.t_o = t_o
@@ -227,6 +234,16 @@ class WaferCycleStore:
         self.meas = meas
         self.proc_keep_channels = proc_keep_channels  # None = auto-discover
         self.per_wafer_norm = per_wafer_norm
+        self.tensor_cache_root = Path(tensor_cache_root) if tensor_cache_root else None
+        self.tensor_cache_required = bool(tensor_cache_required)
+        self.normalizer_cache_root = (
+            Path(normalizer_cache_root) if normalizer_cache_root else None
+        )
+        self.normalizer_cache_required = bool(normalizer_cache_required)
+        self.normalized_cache_root = (
+            Path(normalized_cache_root) if normalized_cache_root else None
+        )
+        self.normalized_cache_required = bool(normalized_cache_required)
         self._records: dict[str, WaferRecord] = {}
         self.proc_kept_names: list[str] | None = None  # set by discover_common_proc_channels()
         self.wavelengths: np.ndarray | None = None
@@ -240,6 +257,59 @@ class WaferCycleStore:
         self.xgb_feat_names: list[str] | None = list(xgb_feat_names) if xgb_feat_names else None
         self._xgb_df: "pd.DataFrame | None" = None  # lazy-loaded feature table
         self.xgb_normalizer: Normalizer | None = None
+
+    def _cache_manifest(self, root: Path | None) -> dict | None:
+        if root is None:
+            return None
+        path = root / "manifest.json"
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _validate_tensor_settings(self, manifest: dict, root: Path) -> None:
+        if int(manifest.get("t_o", -1)) != int(self.t_o) or int(manifest.get("t_p", -1)) != int(self.t_p):
+            raise ValueError(
+                f"DL cache settings mismatch in {root}: "
+                f"expected t_o={self.t_o}, t_p={self.t_p}, "
+                f"found t_o={manifest.get('t_o')}, t_p={manifest.get('t_p')}"
+            )
+
+    def _measurement_rows(self, experiment_key: str):
+        rows = self.meas[self.meas["experiment_key"] == experiment_key]
+        if "X" in rows.columns:
+            rows = rows.sort_values(["X", "Y"])
+        return rows
+
+    def _base_record(
+        self,
+        experiment_key: str,
+        lot_number: int,
+        oes_raw: np.ndarray | None = None,
+        proc_raw: np.ndarray | None = None,
+    ) -> WaferRecord:
+        meas_w = self._measurement_rows(experiment_key)
+        rec = WaferRecord(
+            experiment_key=experiment_key,
+            lot_number=int(lot_number),
+            oes=None,
+            proc=None,
+            oes_raw=(
+                oes_raw if oes_raw is not None else np.empty(0, dtype=np.float32)
+            ),
+            proc_raw=(
+                proc_raw if proc_raw is not None else np.empty(0, dtype=np.float32)
+            ),
+            points_X=meas_w["X"].to_numpy(dtype=np.float32),
+            points_Y=meas_w["Y"].to_numpy(dtype=np.float32),
+            points_si=meas_w["si_etch"].to_numpy(dtype=np.float32),
+            points_ox=meas_w["oxide_etch"].to_numpy(dtype=np.float32),
+        )
+        if self.xgb_feat_names is not None:
+            xdf = self._get_xgb_df()
+            rec.xgb_feats_raw = (
+                xdf.loc[experiment_key, self.xgb_feat_names].to_numpy(dtype=np.float32)
+            )
+        return rec
 
     def _get_xgb_df(self) -> "pd.DataFrame":
         """Lazily load the wafer-level XGB feature table, indexed by experiment_key."""
@@ -264,6 +334,24 @@ class WaferCycleStore:
         — keeping their intersection avoids dropouts and matches the XGBoost
         baseline's "channels available on every wafer" rule.
         """
+        for root, required in (
+            (self.tensor_cache_root, self.tensor_cache_required),
+            (self.normalized_cache_root, self.normalized_cache_required),
+        ):
+            manifest = self._cache_manifest(root)
+            if manifest is None:
+                if required and root is not None:
+                    raise FileNotFoundError(
+                        f"missing DL cache manifest: {root / 'manifest.json'}"
+                    )
+                continue
+            self._validate_tensor_settings(manifest, root)
+            names = manifest.get("proc_kept_names")
+            if not names:
+                raise ValueError(f"DL cache manifest has no proc_kept_names: {root}")
+            self.proc_kept_names = [str(n) for n in names]
+            return self.proc_kept_names
+
         all_sets: list[set[str]] = []
         not_all_nan_sets: list[set[str]] = []
         for k in keys:
@@ -290,54 +378,51 @@ class WaferCycleStore:
                 "call discover_common_proc_channels(...) before load_wafer(...)"
             )
 
-        npz_path = self.cache_root / "wafers" / f"{experiment_key}.npz"
-        z = np.load(npz_path, allow_pickle=False)
-        # promote to a dict-of-arrays so resamplers don't keep the npz handle open
-        npz = {k: z[k] for k in z.files}
+        tensor_path = (
+            self.tensor_cache_root / "wafers" / f"{experiment_key}.npz"
+            if self.tensor_cache_root is not None
+            else None
+        )
+        if tensor_path is not None and tensor_path.exists():
+            z = np.load(tensor_path, allow_pickle=False)
+            oes_raw = z["oes_raw"].astype(np.float32, copy=False)
+            proc_raw = z["proc_raw"].astype(np.float32, copy=False)
+            lot_number = int(z["lot_number"])
+            if self.wavelengths is None and "oes_wavelengths" in z.files:
+                self.wavelengths = z["oes_wavelengths"].astype(np.float32)
+        else:
+            if self.tensor_cache_required and tensor_path is not None:
+                raise FileNotFoundError(f"missing DL tensor cache file: {tensor_path}")
+            npz_path = self.cache_root / "wafers" / f"{experiment_key}.npz"
+            z = np.load(npz_path, allow_pickle=False)
+            # Promote to a dict-of-arrays so resamplers don't keep the npz handle open.
+            npz = {k: z[k] for k in z.files}
 
-        if self.wavelengths is None:
-            self.wavelengths = npz["oes_wavelengths"].astype(np.float32)
+            if self.wavelengths is None:
+                self.wavelengths = npz["oes_wavelengths"].astype(np.float32)
 
-        # Resolve kept-channel indices in THIS wafer's features array
-        names = [str(n) for n in npz["process_features"]]
-        name_to_idx = {n: i for i, n in enumerate(names)}
-        try:
-            keep_idx = np.array(
-                [name_to_idx[n] for n in self.proc_kept_names], dtype=np.int32
-            )
-        except KeyError as e:
-            raise RuntimeError(
-                f"wafer {experiment_key} missing channel {e} present at discovery time"
-            ) from None
+            names = [str(n) for n in npz["process_features"]]
+            name_to_idx = {n: i for i, n in enumerate(names)}
+            try:
+                keep_idx = np.array(
+                    [name_to_idx[n] for n in self.proc_kept_names], dtype=np.int32
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    f"wafer {experiment_key} missing channel {e} present at discovery time"
+                ) from None
 
-        oes_raw = build_oes_cycle_tensor(npz, t_o=self.t_o)
-        proc_raw = build_proc_cycle_tensor(npz, t_p=self.t_p, keep_channel_idx=keep_idx)
-        # Replace any residual NaNs in proc with 0 (will be normalized away)
-        np.nan_to_num(proc_raw, copy=False, nan=0.0)
+            oes_raw = build_oes_cycle_tensor(npz, t_o=self.t_o)
+            proc_raw = build_proc_cycle_tensor(npz, t_p=self.t_p, keep_channel_idx=keep_idx)
+            np.nan_to_num(proc_raw, copy=False, nan=0.0)
+            lot_number = int(npz["lot_number"])
 
-        meas_w = self.meas[self.meas["experiment_key"] == experiment_key].sort_values(
-            ["X", "Y"]
-        ) if "X" in self.meas.columns else self.meas[
-            self.meas["experiment_key"] == experiment_key
-        ]
-        rec = WaferRecord(
+        rec = self._base_record(
             experiment_key=experiment_key,
-            lot_number=int(npz["lot_number"]),
-            oes=None,
-            proc=None,
+            lot_number=lot_number,
             oes_raw=oes_raw,
             proc_raw=proc_raw,
-            points_X=meas_w["X"].to_numpy(dtype=np.float32),
-            points_Y=meas_w["Y"].to_numpy(dtype=np.float32),
-            points_si=meas_w["si_etch"].to_numpy(dtype=np.float32),
-            points_ox=meas_w["oxide_etch"].to_numpy(dtype=np.float32),
         )
-
-        if self.xgb_feat_names is not None:
-            xdf = self._get_xgb_df()
-            rec.xgb_feats_raw = (
-                xdf.loc[experiment_key, self.xgb_feat_names].to_numpy(dtype=np.float32)
-            )
 
         self._records[experiment_key] = rec
         return rec
@@ -378,6 +463,100 @@ class WaferCycleStore:
         self.y_stats = ScalarStats(mean=float(Ys.mean()), std=float(Ys.std() or 1.0))
         self.si_stats = ScalarStats(mean=float(sis.mean()), std=float(sis.std() or 1.0))
         self.ox_stats = ScalarStats(mean=float(oxs.mean()), std=float(oxs.std() or 1.0))
+
+    def normalizer_state_arrays(self) -> dict[str, np.ndarray]:
+        if self.oes_normalizer is None or self.proc_normalizer is None:
+            raise RuntimeError("normalizers are not fitted")
+        if self.x_stats is None or self.y_stats is None:
+            raise RuntimeError("scalar stats are not fitted")
+        arrays: dict[str, np.ndarray] = {
+            "oes_mean": self.oes_normalizer.mean.astype(np.float32),
+            "oes_std": self.oes_normalizer.std.astype(np.float32),
+            "proc_mean": self.proc_normalizer.mean.astype(np.float32),
+            "proc_std": self.proc_normalizer.std.astype(np.float32),
+            "x_mean": np.asarray(self.x_stats.mean, dtype=np.float32),
+            "x_std": np.asarray(self.x_stats.std, dtype=np.float32),
+            "y_mean": np.asarray(self.y_stats.mean, dtype=np.float32),
+            "y_std": np.asarray(self.y_stats.std, dtype=np.float32),
+            "si_mean": np.asarray(self.si_stats.mean, dtype=np.float32),
+            "si_std": np.asarray(self.si_stats.std, dtype=np.float32),
+            "ox_mean": np.asarray(self.ox_stats.mean, dtype=np.float32),
+            "ox_std": np.asarray(self.ox_stats.std, dtype=np.float32),
+        }
+        if self.xgb_normalizer is not None:
+            arrays["xgb_mean"] = self.xgb_normalizer.mean.astype(np.float32)
+            arrays["xgb_std"] = self.xgb_normalizer.std.astype(np.float32)
+        return arrays
+
+    def load_normalizer_state_arrays(self, arrays: dict[str, np.ndarray]) -> None:
+        self.oes_normalizer = Normalizer(
+            mean=np.asarray(arrays["oes_mean"], dtype=np.float32),
+            std=np.asarray(arrays["oes_std"], dtype=np.float32),
+            log1p=True,
+        )
+        self.proc_normalizer = Normalizer(
+            mean=np.asarray(arrays["proc_mean"], dtype=np.float32),
+            std=np.asarray(arrays["proc_std"], dtype=np.float32),
+            log1p=False,
+        )
+        self.x_stats = ScalarStats(float(arrays["x_mean"]), float(arrays["x_std"]))
+        self.y_stats = ScalarStats(float(arrays["y_mean"]), float(arrays["y_std"]))
+        self.si_stats = ScalarStats(float(arrays["si_mean"]), float(arrays["si_std"]))
+        self.ox_stats = ScalarStats(float(arrays["ox_mean"]), float(arrays["ox_std"]))
+        if "xgb_mean" in arrays and "xgb_std" in arrays:
+            self.xgb_normalizer = Normalizer(
+                mean=np.asarray(arrays["xgb_mean"], dtype=np.float32),
+                std=np.asarray(arrays["xgb_std"], dtype=np.float32),
+                log1p=False,
+            )
+        else:
+            self.xgb_normalizer = None
+
+    def load_cached_normalizers(self, fold: int) -> bool:
+        if self.normalizer_cache_root is None:
+            return False
+        path = self.normalizer_cache_root / f"fold{int(fold)}" / "stats.npz"
+        if not path.exists():
+            if self.normalizer_cache_required:
+                raise FileNotFoundError(f"missing DL normalizer cache: {path}")
+            return False
+        with np.load(path, allow_pickle=False) as z:
+            self.load_normalizer_state_arrays({k: z[k] for k in z.files})
+        return True
+
+    def load_cached_normalized(self, fold: int, keys: Iterable[str]) -> bool:
+        if self.normalized_cache_root is None:
+            return False
+        fold_root = self.normalized_cache_root / f"fold{int(fold)}"
+        stats_path = fold_root / "stats.npz"
+        if not stats_path.exists():
+            if self.normalized_cache_required:
+                raise FileNotFoundError(f"missing DL normalized stats cache: {stats_path}")
+            return False
+        with np.load(stats_path, allow_pickle=False) as z:
+            self.load_normalizer_state_arrays({k: z[k] for k in z.files})
+
+        for key in keys:
+            wafer_path = fold_root / "wafers" / f"{key}.npz"
+            if not wafer_path.exists():
+                if self.normalized_cache_required:
+                    raise FileNotFoundError(f"missing DL normalized wafer cache: {wafer_path}")
+                return False
+            with np.load(wafer_path, allow_pickle=False) as z:
+                rec = self._base_record(
+                    experiment_key=str(key),
+                    lot_number=int(z["lot_number"]),
+                )
+                rec.oes = z["oes"].astype(np.float32, copy=False)
+                rec.proc = z["proc"].astype(np.float32, copy=False)
+                rec.points_X_norm = z["points_X_norm"].astype(np.float32, copy=False)
+                rec.points_Y_norm = z["points_Y_norm"].astype(np.float32, copy=False)
+                rec.points_si_norm = z["points_si_norm"].astype(np.float32, copy=False)
+                rec.points_ox_norm = z["points_ox_norm"].astype(np.float32, copy=False)
+                if "xgb_feats" in z.files:
+                    rec.xgb_feats = z["xgb_feats"].astype(np.float32, copy=False)
+                self._records[str(key)] = rec
+        return True
 
     def normalize_all(self, drop_raw: bool = True, progress: bool = True) -> None:
         """Apply fitted normalizers to every loaded wafer.

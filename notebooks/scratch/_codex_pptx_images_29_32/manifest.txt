@@ -1,0 +1,11 @@
+Slide 29: rId3 -> ppt/media/image8.png -> slide29_img01.png
+Slide 29: rId5 -> ppt/media/image35.png -> slide29_img02.png
+Slide 29: rId4 -> ppt/media/image9.png -> slide29_img03.png
+Slide 30: rId3 -> ppt/media/image8.png -> slide30_img01.png
+Slide 30: rId5 -> ppt/media/image36.png -> slide30_img02.png
+Slide 30: rId4 -> ppt/media/image9.png -> slide30_img03.png
+Slide 31: rId3 -> ppt/media/image8.png -> slide31_img01.png
+Slide 31: rId5 -> ppt/media/image37.png -> slide31_img02.png
+Slide 31: rId4 -> ppt/media/image9.png -> slide31_img03.png
+Slide 32: rId3 -> ppt/media/image8.png -> slide32_img01.png
+Slide 32: rId4 -> ppt/media/image9.png -> slide32_img02.png
