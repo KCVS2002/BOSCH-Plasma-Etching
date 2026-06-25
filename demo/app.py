@@ -70,6 +70,16 @@ def load_oxide_predictor(ckpt_rel: str) -> DLPredictor:
     return pred
 
 
+@st.cache_data(show_spinner=False)
+def load_oes_grandmean() -> tuple[np.ndarray | None, float | None]:
+    """Mean OES preview image over all bundled wafers + shared deviation scale."""
+    p = BUNDLE / "oes_grand_mean.npz"
+    if not p.exists():
+        return None, None
+    z = np.load(p)
+    return z["mean"], float(z["scale"])
+
+
 def run_oxide_live(pred: DLPredictor, w: dict) -> tuple[np.ndarray, float]:
     """Run the genuine model forward on stored (normalized) inputs. Returns (pred, seconds)."""
     inputs = ModelInputs(oes=w["ox_oes"], proc=w["ox_proc"], xy=w["ox_xy"])
@@ -125,15 +135,30 @@ def truth_only(X, Y, y_true, unit):
     return fig
 
 
-def oes_preview(ox_oes: np.ndarray):
-    """Heatmap of what the model 'sees': band-selected OES, mean over time → (100 cycles × 256 bands)."""
+def oes_preview(ox_oes: np.ndarray, mode: str = "dev",
+                grand_mean: np.ndarray | None = None, scale: float | None = None):
+    """Heatmap of what the model 'sees': band-selected OES, mean over time → (256 bands × 100 cycles).
+
+    mode="dev": this wafer − mean wafer (diverging, shared scale) — makes the
+                subtle-but-real between-wafer differences visible.
+    mode="abs": the normalized values, with robust (2–98%) limits so the dark
+                cycle-edge outliers don't wash the whole map out to one color.
+    """
     img = ox_oes.mean(axis=1).T  # (256 bands, 100 cycles)
     fig, ax = plt.subplots(figsize=(6.4, 3.1), constrained_layout=True)
-    im = ax.imshow(img, aspect="auto", cmap="magma", origin="lower")
+    if mode == "dev" and grand_mean is not None:
+        dev = img - grand_mean
+        s = (scale or float(np.percentile(np.abs(dev), 99))) or 1e-6
+        im = ax.imshow(dev, aspect="auto", cmap="RdBu_r", origin="lower", vmin=-s, vmax=s)
+        title = "Model input — OES deviation from mean wafer"
+    else:
+        lo, hi = np.percentile(img, [2, 98])
+        im = ax.imshow(img, aspect="auto", cmap="magma", origin="lower", vmin=lo, vmax=hi)
+        title = "Model input — OES × 100 cycles (normalized)"
     ax.set_xlabel("BOSCH cycle (1 → 100)", fontsize=9)
     ax.set_ylabel("OES band", fontsize=9)
     ax.tick_params(labelsize=8)
-    ax.set_title("Model input — OES × 100 cycles (normalized)", fontsize=11, fontweight="bold")
+    ax.set_title(title, fontsize=11, fontweight="bold")
     fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
     return fig
 
@@ -185,27 +210,51 @@ st.markdown(
 st.markdown("#### 🔬 플라즈마 식각 가상계측 (Virtual Metrology) — Live Demo")
 
 # ── sidebar ──────────────────────────────────────────────────────────────────
+si_wafers = man.get("si_wafers", [])
 with st.sidebar:
     st.header("⚙️ 시연 설정")
     per_wafer = {w["key"]: w for w in man["per_wafer"]}
+
+    # Default is oxide-only (every wafer, held-out via its own fold). The si model
+    # is single-fold, so si stays an opt-in toggle restricted to fold-0 wafers.
+    include_si = st.checkbox(
+        "si_etch 시연 포함 (fold-0 한정)", value=False,
+        help="기본은 oxide_etch 전용(전 fold held-out). 켜면 si_etch도 볼 수 있지만, "
+             "si는 단일-fold 모델이라 fold-0 held-out 웨이퍼만 시연됩니다.",
+        disabled=not si_wafers,
+    )
+    if include_si and si_wafers:
+        target = st.radio(
+            "예측 타겟",
+            ["oxide_etch", "si_etch"],
+            format_func=lambda t: ("oxide_etch — 본 연구 핵심 (process-driven)"
+                                   if t == "oxide_etch"
+                                   else "si_etch — 공간 지배 (spatial, 참고·fold0)"),
+        )
+    else:
+        target = "oxide_etch"
+
+    is_si_target = target == "si_etch"
+    wafer_options = si_wafers if is_si_target else man["wafers"]
     def _label(k):
         w = per_wafer[k]
-        return f"{k}  (lot {w['lot']})"
-    wafer_key = st.selectbox("테스트 웨이퍼 (held-out, fold 0)", man["wafers"],
-                             format_func=_label)
-    target = st.radio(
-        "예측 타겟",
-        ["oxide_etch", "si_etch"],
-        format_func=lambda t: ("oxide_etch — 본 연구 핵심 (process-driven)"
-                               if t == "oxide_etch"
-                               else "si_etch — 공간 지배 (spatial, 참고)"),
+        return f"{k}  (lot {w['lot']} · fold {w['fold']})"
+    wafer_key = st.selectbox(
+        "테스트 웨이퍼 (held-out)", wafer_options, format_func=_label,
+        help=("fold-0 held-out 웨이퍼만 (si는 단일-fold 모델)" if is_si_target
+              else "전 fold held-out — 각 웨이퍼는 자기 fold 모델로 예측"),
     )
     show_oes = st.checkbox("모델 입력(OES 스펙트럼) 미리보기", value=True)
+    oes_view = (st.radio("OES 표시", ["평균 대비 편차", "절대값"], horizontal=True,
+                         help="'평균 대비 편차'는 이 웨이퍼가 평균 웨이퍼와 다른 부분을 보여줍니다 "
+                              "(미세하지만 실재하는 웨이퍼 간 차이).")
+                if show_oes else "평균 대비 편차")
     st.divider()
     st.caption("OES + Process 센서 신호만으로 웨이퍼 89개 지점의 식각량을 예측합니다. "
                "물리 계측은 파괴·고비용·수십 분 — VM은 비파괴로 즉시 추정합니다.")
     st.markdown(f"**검증 데이터** · 웨이퍼 {man['n_wafers']}개 × 89지점 · "
-                f"`{man['split_file']}` fold {man['fold']} · 전부 held-out")
+                f"`{man['split_file']}` · {len(man['folds'])}-fold 전부 held-out "
+                f"(각 웨이퍼 = 자기 fold 검증셋)")
 
 w = load_wafer(wafer_key)
 X, Y = w["X"], w["Y"]
@@ -217,7 +266,9 @@ y_true = w["oxide_true"] if is_oxide else w["si_true"]
 pool = man["pooled"]["oxide" if is_oxide else "si"]
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("전체 검증 R² (DL)", f"{pool['dl']['r2']:.3f}",
-          help="번들 18개 웨이퍼 전체 포인트 기준 (논문 헤드라인 수치)")
+          help=(f"fold-0 {len(si_wafers)}개 웨이퍼 기준" if not is_oxide
+                else f"{man['n_wafers']}개 held-out 웨이퍼 전체 포인트 기준 "
+                     "(5-fold pooled, 논문 헤드라인 수치)"))
 c2.metric("XGBoost baseline", f"{pool['xgb']['r2']:.3f}",
           delta=f"{pool['dl']['r2'] - pool['xgb']['r2']:+.3f}")
 c3.metric("Spatial-mean baseline", f"{pool['spatial']['r2']:.3f}",
@@ -242,7 +293,7 @@ with left:
         run = st.button("🚀 모델 추론 실행 (Run inference)", type="primary",
                         use_container_width=True)
         if run:
-            pred = load_oxide_predictor(man["checkpoint_oxide"])
+            pred = load_oxide_predictor(per_wafer[wafer_key]["checkpoint"])
             with st.spinner("Cycle-Aware DL 모델 추론 중..."):
                 y_pred, secs = run_oxide_live(pred, w)
             st.session_state[state_key] = (y_pred, secs)
@@ -268,8 +319,15 @@ with left:
 
 with right:
     if show_oes:
-        st.markdown("**① 모델 입력 — OES 스펙트럼**")
-        st.pyplot(oes_preview(w["ox_oes"]), use_container_width=True)
+        gm, gscale = load_oes_grandmean()
+        dev_mode = oes_view.startswith("평균") and gm is not None
+        st.markdown("**① 모델 입력 — OES 편차 (평균 웨이퍼 대비)**" if dev_mode
+                    else "**① 모델 입력 — OES 스펙트럼**")
+        st.pyplot(oes_preview(w["ox_oes"], "dev" if dev_mode else "abs", gm, gscale),
+                  use_container_width=True)
+        if dev_mode:
+            st.caption("🔴 평균보다 강함 · 🔵 약함 — 미세하지만 웨이퍼마다 고유 패턴. "
+                       "모델은 이 차이를 전 시간축·수백만 픽셀에 걸쳐 적분해 etch량을 예측합니다.")
     st.markdown("**③ 같은 웨이퍼, 세 모델 비교**")
     st.pyplot(comparison_bar(per_wafer[wafer_key]["oxide" if is_oxide else "si"]),
               use_container_width=True)

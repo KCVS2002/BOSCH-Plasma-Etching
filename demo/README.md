@@ -6,6 +6,11 @@
 직접 통과시켜** 89개 측정 지점의 식각량을 예측하고, 예측 / 실측 / 오차 **웨이퍼 맵**과
 XGBoost · Spatial-mean baseline 대비 정확도를 같은 화면에서 보여준다.
 
+**held-out 정직성:** 5-fold wafer GroupKFold 라서 모든 웨이퍼를 시연하되, 각 웨이퍼는
+**자기가 검증셋이었던 fold 의 체크포인트**로 추론한다(`oxide_etch_fold{0..4}.pt` 전부 번들에 포함).
+따라서 fold 0뿐 아니라 **전 fold 웨이퍼**가 학습에 안 쓰인 진짜 held-out 예측이다.
+`si_etch` 는 단일-fold 모델이라 **fold-0 웨이퍼만** 시연 가능하며, 사이드바 토글로 켠다(기본 off, oxide 전용).
+
 ```
 센서(OES + Process)  ──►  Cycle-Aware DL 모델  ──►  89-point 웨이퍼 식각 맵
                                                      └► XGBoost / Spatial baseline 비교
@@ -16,12 +21,15 @@ XGBoost · Spatial-mean baseline 대비 정확도를 같은 화면에서 보여�
 ## 빠른 시작 (2단계)
 
 ```bat
-:: 1) 시연용 번들 생성 (1회, ~1분). fold-0 held-out 18웨이퍼를 압축 패키징.
-.venv\python.exe -m demo.build_bundle
+:: 1) 시연용 번들 생성 (1회). 전 fold held-out 웨이퍼(~90개)를 압축 패키징.
+::    각 웨이퍼는 자기 fold 체크포인트로 추론되어 모두 정직한 held-out 예측.
+.venv\Scripts\python.exe -m demo.build_bundle
 
 :: 2) 대시보드 실행
-.venv\python.exe -m streamlit run demo/app.py
+.venv\Scripts\python.exe -m streamlit run demo/app.py --server.fileWatcherType none
 ```
+
+> fold 0만 빠르게 만들려면(예전 동작): `.venv\Scripts\python.exe -m demo.build_bundle --folds 0`
 
 브라우저가 자동으로 열린다(기본 http://localhost:8501). 발표 시 전체화면 권장.
 

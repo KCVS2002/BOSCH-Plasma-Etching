@@ -59,7 +59,8 @@
       "Bash(.venv/Scripts/python.exe -c \"import pandas as pd; df=pd.read_csv\\(r'outputs/experiments/2026-05-28_03-16_dl-multimodal-oes-aux-mixup-5fold/logs/epoch_log.csv'\\); print\\(df.columns.tolist\\(\\)\\); print\\(df.groupby\\(['target','fold']\\).size\\(\\)\\)\")",
       "Bash(.venv/Scripts/python.exe notebooks/scratch/make_final_arch.py)",
       "WebSearch",
-      "WebFetch(domain:zenodo.org)"
+      "WebFetch(domain:zenodo.org)",
+      "PowerShell(& .\\\\.venv\\\\Scripts\\\\python.exe -m streamlit run demo/app.py --server.port 8501 --server.headless true)"
     ]
   }
 }
