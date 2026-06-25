@@ -13,6 +13,9 @@ __pycache__/
 # Preprocessed cache (regeneratable)
 cache/
 
+# Demo inference bundle (regeneratable via demo/build_bundle.py)
+demo/bundle/
+
 # OS
 .DS_Store
 Thumbs.db

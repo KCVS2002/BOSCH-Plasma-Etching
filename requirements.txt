@@ -1,6 +1,6 @@
 # Core scientific stack
 numpy==2.4.4
-pandas==3.0.2
+pandas==2.3.3   # streamlit (demo) requires pandas<3; verified compatible with training code
 scipy==1.17.1
 scikit-learn==1.8.0
 xarray==2026.4.0
@@ -25,3 +25,6 @@ seaborn==0.13.2
 
 # Utilities
 tqdm==4.67.3
+
+# Demo dashboard (교내 경진대회 live 시연 — demo/app.py)
+streamlit==1.41.1
