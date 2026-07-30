@@ -60,7 +60,9 @@
       "Bash(.venv/Scripts/python.exe notebooks/scratch/make_final_arch.py)",
       "WebSearch",
       "WebFetch(domain:zenodo.org)",
-      "PowerShell(& .\\\\.venv\\\\Scripts\\\\python.exe -m streamlit run demo/app.py --server.port 8501 --server.headless true)"
+      "PowerShell(& .\\\\.venv\\\\Scripts\\\\python.exe -m streamlit run demo/app.py --server.port 8501 --server.headless true)",
+      "mcp__2943e19f-dd38-494a-90cf-c5e2708e1531__notion-search",
+      "mcp__2943e19f-dd38-494a-90cf-c5e2708e1531__notion-fetch"
     ]
   }
 }
